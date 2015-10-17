@@ -32,7 +32,7 @@ public interface Lazy<A> extends Function<Void, A>, Functor<A> {
   }
 
   @Override
-  default <B> Lazy<B> map(final @Nonnull Function<? super A, ? extends B> function) {
+  default @Nonnull  <B> Lazy<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
     return () -> function.$(Lazy.this.$());
   }
