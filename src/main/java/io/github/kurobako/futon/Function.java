@@ -22,6 +22,7 @@ import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
+@FunctionalInterface
 public interface Function<A, B> {
   B $(A argument);
 
