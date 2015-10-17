@@ -1,0 +1,17 @@
+group 'io.github.kurobako.futon'
+version '0.1-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+project.ext.jsr305Version = "3.0.0"
+project.ext.junitVersion = "4.12"
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile "com.google.code.findbugs:jsr305:${jsr305Version}"
+  testCompile "junit:junit:${junitVersion}"
+}
