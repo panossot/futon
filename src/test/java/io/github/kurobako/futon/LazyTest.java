@@ -25,15 +25,45 @@ import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import static io.github.kurobako.futon.Lazy.join;
+import static io.github.kurobako.futon.Lazy.lazy;
+import static io.github.kurobako.futon.Pair.pair;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 
 @RunWith(Theories.class)
 public class LazyTest {
 
   @Theory
-  public void test$Void(final Lazy<Object> mock) {
-    assertSame(mock.$(null), mock.$());
+  public void testBind(final Lazy<Object> mock) {
+    assertEquals(mock.bind(o -> o::toString).$(), mock.$().toString());
+  }
+
+  @Theory
+  public void testBindNPE(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.bind(null);
+  }
+
+  @Theory
+  public void testZip(final Lazy<Object> one, final Lazy<Object> another) {
+    Lazy<Pair<Object, Object>> zipped = one.zip(another, (fst, snd) -> () -> pair(fst, snd));
+    assertEquals(one.$(), zipped.$().left);
+    assertEquals(another.$(), zipped.$().right);
+  }
+
+  @Theory
+  public void testZipNPEArg0(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.zip(null, (a, b) -> lazy(a));
+  }
+
+  @Theory
+  public void testZipNPEArg1(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.zip(lazy(new Object()), null);
   }
 
   @Theory
@@ -48,6 +78,42 @@ public class LazyTest {
     mock.map(null);
   }
 
+  @Theory
+  public void testFoldRight(final Lazy<Object> mock) {
+    assertEquals(mock.foldRight((o, s) -> o.toString() + s, ""), mock.$().toString());
+  }
+
+  @Theory
+  public void testFoldRightNPE(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.foldRight(null, "");
+  }
+
+  @Theory
+  public void testFoldLeft(final Lazy<Object> mock) {
+    assertEquals(mock.foldLeft((s, o) -> o.toString() + s, ""), mock.$().toString());
+  }
+
+  @Theory
+  public void testFoldLeftNPE(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.foldLeft(null, "");
+  }
+
+  @Theory
+  public void testStaticLazy() {
+    Object o = new Object();
+    assertEquals(lazy(o).$(), o);
+  }
+
+  @Theory
+  public void testStaticJoin() {
+    Object o = new Object();
+    assertEquals(join(() -> () -> o).$(), o);
+  }
+
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -60,4 +126,7 @@ public class LazyTest {
       return val;
     }
   };
+
+  @DataPoint
+  public static final Lazy<Object> pure = lazy(new Object());
 }
