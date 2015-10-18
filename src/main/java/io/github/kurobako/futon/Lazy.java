@@ -34,10 +34,10 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
   }
 
   default @Nonnull <B, C> Lazy<C> zip(final @Nonnull Lazy<B> another,
-                                      final @Nonnull BiFunction<? super A, ? super B, ? extends Lazy<C>> merge) {
+                                      final @Nonnull BiFunction<? super A, ? super B, ? extends Lazy<C>> function) {
     requireNonNull(another, "another");
-    requireNonNull(merge, "merge");
-    Lazy<C> result = merge.$($(), another.$());
+    requireNonNull(function, "function");
+    Lazy<C> result = function.$($(), another.$());
     return requireNonNull(result, "result");
   }
 
@@ -59,12 +59,12 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
     return function.$(initial, $());
   }
 
-  static @Nonnull <A> Lazy<A> lazy(A value) {
+  static @Nonnull <A> Lazy<A> lazy(final A value) {
     return () -> value;
   }
 
-  static @Nonnull <A> Lazy<A> join(@Nonnull Lazy<? extends Lazy<A>> lazy) {
-    requireNonNull(lazy, "lazy");
-    return lazy.bind(id());
+  static @Nonnull <A> Lazy<A> join(final @Nonnull Lazy<? extends Lazy<A>> wrapper) {
+    requireNonNull(wrapper, "wrapper");
+    return wrapper.bind(id());
   }
 }
