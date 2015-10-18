@@ -46,11 +46,13 @@ public interface Either<L, R> extends Foldable<Either<L, R>> {
 
   @Nonnull Either<R, L> swap();
 
-  static @Nonnull <L, R> Either<L, R> left(L value) {
+  static @Nonnull <L, R> Either<L, R> left(final @Nonnull L value) {
+    requireNonNull(value, "value");
     return new Either$Left<>(value);
   }
 
-  static @Nonnull <L, R> Either<L, R> right(R value) {
+  static @Nonnull <L, R> Either<L, R> right(final @Nonnull R value) {
+    requireNonNull(value, "value");
     return new Either$Right<>(value);
   }
 
