@@ -25,10 +25,6 @@ import static java.util.Objects.requireNonNull;
 @FunctionalInterface
 public interface Predicate<A> extends Function<A, Boolean> {
 
-  default @Nonnull Predicate<A> not() {
-    return a -> !$(a);
-  }
-
   default @Nonnull Predicate<A> and(final @Nonnull Predicate<? super A> predicate) {
     requireNonNull(predicate, "predicate");
     return a -> this.$(a) && predicate.$(a);
@@ -42,6 +38,11 @@ public interface Predicate<A> extends Function<A, Boolean> {
   default @Nonnull Predicate<A> xor(final @Nonnull Predicate<? super A> predicate) {
     requireNonNull(predicate, "predicate");
     return a -> this.$(a) ^ predicate.$(a);
+  }
+
+  static @Nonnull <A> Predicate<A> not(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate, "predicate");
+    return a -> !predicate.$(a);
   }
 
   static @Nonnull <A> Predicate<A> TRUE() {

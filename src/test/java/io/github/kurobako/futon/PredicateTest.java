@@ -22,16 +22,11 @@ import org.junit.Test;
 
 import static io.github.kurobako.futon.Predicate.FALSE;
 import static io.github.kurobako.futon.Predicate.TRUE;
+import static io.github.kurobako.futon.Predicate.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PredicateTest {
-
-  @Test
-  public void testNot() {
-    assert$True(FALSE().not());
-    assert$False(TRUE().not());
-  }
 
   @Test
   public void testAnd() {
@@ -76,6 +71,19 @@ public class PredicateTest {
     //noinspection ConstantConditions
     fail.xor(null);
   }
+
+  @Test
+  public void testNot() {
+    assert$True(not(FALSE()));
+    assert$False(not(TRUE()));
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testNotNPE() {
+    //noinspection ConstantConditions
+    not(null);
+  }
+
 
   @Test
   public void testTRUE() {
