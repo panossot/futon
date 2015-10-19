@@ -39,6 +39,20 @@ public class FunctionTest {
   }
 
   @Test
+  public void testMap() {
+    final Function<Integer, Integer> f = i -> i++;
+    final Function<Integer, Integer> g = i -> i*i;
+    assertEquals(g.map(f).$(3), g.$(f.$(3)));
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testMapNPE() {
+    final Function<?, ?> f = a -> a;
+    //noinspection ConstantConditions
+    f.map(null);
+  }
+
+  @Test
   public void testStaticId() {
     final Object arg = new Object();
     assertEquals(Function.id().$(arg), arg);

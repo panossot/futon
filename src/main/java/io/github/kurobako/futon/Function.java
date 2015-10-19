@@ -23,12 +23,18 @@ import javax.annotation.Nonnull;
 import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
-public interface Function<A, B> {
+public interface Function<A, B> extends Functor<B> {
   B $(A argument);
 
-  default @Nonnull <O> Function<O, B> of(final @Nonnull Function<? super O, ? extends A> function) {
+  default @Nonnull <C> Function<C, B> of(final @Nonnull Function<? super C, ? extends A> function) {
     requireNonNull(function, "function");
     return c -> $(function.$(c));
+  }
+
+  @Override
+  default <C> Function<A, C> map(final @Nonnull Function<? super B, ? extends C> function) {
+    requireNonNull(function, "function");
+    return a -> function.$(this.$(a));
   }
 
   static @Nonnull <A> Function<A, A> id() {
