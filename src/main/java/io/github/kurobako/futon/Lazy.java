@@ -30,8 +30,7 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
 
   default @Nonnull <B> Lazy<B> bind(final @Nonnull Function<? super A, ? extends Lazy<B>> function) {
     requireNonNull(function, "function");
-    Lazy<B> result = function.$($());
-    return requireNonNull(result, "result");
+    return () -> function.$($()).$();
   }
 
   default @Nonnull <B> Lazy<B> apply(final @Nonnull Lazy<? extends Function<? super A, ? extends B>> transformation) {
@@ -43,8 +42,7 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
                                       final @Nonnull BiFunction<? super A, ? super B, ? extends Lazy<C>> function) {
     requireNonNull(another, "another");
     requireNonNull(function, "function");
-    Lazy<C> result = function.$($(), another.$());
-    return requireNonNull(result, "result");
+    return () -> function.$(this.$(), another.$()).$();
   }
 
   default @Nonnull <B> Lazy<Pair<A, B>> zip(final @Nonnull Lazy<B> another) {
@@ -54,7 +52,7 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
   @Override
   default @Nonnull  <B> Lazy<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
-    return bind(a -> lazy(function.$(a)));
+    return () -> function.$($());
   }
 
   @Override
