@@ -37,6 +37,10 @@ public interface Maybe<A> extends Functor<A>, Foldable<A> {
     return function.$(this.value(), another.value());
   }
 
+  default @Nonnull <B> Maybe<Pair<A, B>> zip(final @Nonnull Maybe<B> another) {
+    return zip(another, (a, b) -> just(pair(a, b)));
+  }
+
   default  @Nonnull Maybe<A> filter(final @Nonnull Predicate<? super A> predicate) {
     requireNonNull(predicate, "predicate");
     return predicate.$(value()) ? this : Maybe.nothing();

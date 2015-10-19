@@ -46,24 +46,38 @@ public class LazyTest {
   }
 
   @Theory
-  public void testZip(final Lazy<Object> one, final Lazy<Object> another) {
+  public void testZipWithFunction(final Lazy<Object> one, final Lazy<Object> another) {
     Lazy<Pair<Object, Object>> zipped = one.zip(another, (fst, snd) -> () -> pair(fst, snd));
     assertEquals(one.$(), zipped.$().left);
     assertEquals(another.$(), zipped.$().right);
   }
 
   @Theory
-  public void testZipNPEArg0(final Lazy<Object> mock) {
+  public void testZipWithFunctionNPEArg0(final Lazy<Object> mock) {
     thrown.expect(NullPointerException.class);
     //noinspection ConstantConditions
     mock.zip(null, (a, b) -> lazy(a));
   }
 
   @Theory
-  public void testZipNPEArg1(final Lazy<Object> mock) {
+  public void testZipWithFunctionNPEArg1(final Lazy<Object> mock) {
     thrown.expect(NullPointerException.class);
     //noinspection ConstantConditions
     mock.zip(lazy(new Object()), null);
+  }
+
+  @Theory
+  public void testZip(final Lazy<Object> one, final Lazy<Object> another) {
+    Lazy<Pair<Object, Object>> zipped = one.zip(another);
+    assertEquals(one.$(), zipped.$().left);
+    assertEquals(another.$(), zipped.$().right);
+  }
+
+  @Theory
+  public void testZipNPE(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.zip(null);
   }
 
   @Theory

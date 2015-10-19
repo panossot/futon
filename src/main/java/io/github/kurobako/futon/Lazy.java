@@ -21,6 +21,7 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 
 import static io.github.kurobako.futon.Function.id;
+import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
@@ -39,6 +40,10 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
     requireNonNull(function, "function");
     Lazy<C> result = function.$($(), another.$());
     return requireNonNull(result, "result");
+  }
+
+  default @Nonnull <B> Lazy<Pair<A, B>> zip(final @Nonnull Lazy<B> another) {
+    return zip(another, (a, b) -> () -> pair(a, b));
   }
 
   @Override

@@ -49,7 +49,7 @@ public class MaybeTest {
   }
 
   @Theory
-  public void testZip(final Maybe<Object> one, final Maybe<Object> another) {
+  public void testZipWithFunction(final Maybe<Object> one, final Maybe<Object> another) {
     Maybe<Pair<Object, Object>> zipped = one.zip(another, (fst, snd) -> Maybe.just(Pair.pair(fst, snd)));
     Object left = zipped.value().left;
     Object right = zipped.value().right;
@@ -60,17 +60,35 @@ public class MaybeTest {
   }
 
   @Theory
-  public void testZipNPEArg0(final Maybe<Object> mock) {
+  public void testZipWithFunctionNPEArg0(final Maybe<Object> mock) {
     thrown.expect(NullPointerException.class);
     //noinspection ConstantConditions
     mock.zip(null, (a, b) -> Maybe.just(a));
   }
 
   @Theory
-  public void testZipNPEArg1(final Maybe<Object> mock) {
+  public void testZipWithFunctionNPEArg1(final Maybe<Object> mock) {
     thrown.expect(NullPointerException.class);
     //noinspection ConstantConditions
     mock.zip(Maybe.nothing(), null);
+  }
+
+  @Theory
+  public void testZip(final Maybe<Object> one, final Maybe<Object> another) {
+    Maybe<Pair<Object, Object>> zipped = one.zip(another);
+    Object left = zipped.value().left;
+    Object right = zipped.value().right;
+    if (one.isJust()) assertEquals(left, one.value());
+    else assertNull(left);
+    if (another.isJust()) assertEquals(right, another.value());
+    else assertNull(right);
+  }
+
+  @Theory
+  public void testZipNPE(final Maybe<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.zip(null);
   }
 
   @Theory
