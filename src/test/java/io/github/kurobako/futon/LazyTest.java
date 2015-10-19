@@ -46,6 +46,18 @@ public class LazyTest {
   }
 
   @Theory
+  public void testApply(final Lazy<Object> mock) {
+    assertEquals(mock.apply(() -> Object::toString).$(), mock.$().toString());
+  }
+
+  @Theory
+  public void testApplyNPE(final Lazy<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.apply(null);
+  }
+
+  @Theory
   public void testZipWithFunction(final Lazy<Object> one, final Lazy<Object> another) {
     Lazy<Pair<Object, Object>> zipped = one.zip(another, (fst, snd) -> () -> pair(fst, snd));
     assertEquals(one.$(), zipped.$().left);

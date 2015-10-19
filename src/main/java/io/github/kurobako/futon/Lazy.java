@@ -34,6 +34,11 @@ public interface Lazy<A> extends Functor<A>, Foldable<A> {
     return requireNonNull(result, "result");
   }
 
+  default @Nonnull <B> Lazy<B> apply(final @Nonnull Lazy<? extends Function<? super A, ? extends B>> transformation) {
+    requireNonNull(transformation, "transformation");
+    return () -> transformation.$().$($());
+  }
+
   default @Nonnull <B, C> Lazy<C> zip(final @Nonnull Lazy<B> another,
                                       final @Nonnull BiFunction<? super A, ? super B, ? extends Lazy<C>> function) {
     requireNonNull(another, "another");
