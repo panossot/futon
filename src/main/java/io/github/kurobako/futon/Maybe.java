@@ -25,38 +25,22 @@ import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 public interface Maybe<A> extends Functor<A>, Foldable<A> {
-  default  @Nonnull <B> Maybe<B> bind(final @Nonnull Function<? super A, ? extends Maybe<B>> function) {
-    requireNonNull(function, "function");
-    return function.$(value());
-  }
+  @Nonnull <B> Maybe<B> bind(@Nonnull Function<? super A, ? extends Maybe<B>> function);
 
-  default @Nonnull <B, C> Maybe<C> zip(final @Nonnull Maybe<B> another,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends Maybe<C>> function) {
+  @Nonnull <B> Maybe<B> apply(@Nonnull Maybe<? extends Function<? super A, ? extends B>> transformation);
+
+  default  @Nonnull <B, C> Maybe<C> zip(final @Nonnull Maybe<B> another,
+                                      final @Nonnull BiFunction<? super A, ? super B, ? extends Maybe<C>> function) {
     requireNonNull(another, "another");
     requireNonNull(function, "function");
     return function.$(this.value(), another.value());
   }
 
-  default @Nonnull <B> Maybe<Pair<A, B>> zip(final @Nonnull Maybe<B> another) {
-    return zip(another, (a, b) -> just(pair(a, b)));
+  default  @Nonnull <B> Maybe<Pair<A, B>> zip(final @Nonnull Maybe<B> another) {
+    return zip(another, (a, b) -> Maybe.just(pair(a, b)));
   }
 
-  default  @Nonnull Maybe<A> filter(final @Nonnull Predicate<? super A> predicate) {
-    requireNonNull(predicate, "predicate");
-    return predicate.$(value()) ? this : Maybe.nothing();
-  }
-
-  @Override
-  default  <B> B foldRight(final @Nonnull BiFunction<A, B, B> function, B initial) {
-    requireNonNull(function, "function");
-    return function.$(value(), initial);
-  }
-
-  @Override
-  default  <B> B foldLeft(final @Nonnull BiFunction<B, A, B> function, B initial) {
-    requireNonNull(function, "function");
-    return function.$(initial, value());
-  }
+  @Nonnull Maybe<A> filter(@Nonnull Predicate<? super A> predicate);
 
   default @Nonnull <B> Maybe<Pair<A, B>> and(final @Nonnull Maybe<B> another) {
     requireNonNull(another, "another");
@@ -84,10 +68,7 @@ public interface Maybe<A> extends Functor<A>, Foldable<A> {
   A value();
 
   @Override
-  default  @Nonnull <B> Maybe<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-    requireNonNull(function, "function");
-    return Maybe.just(function.$(value()));
-  }
+  @Nonnull <B> Maybe<B> map(@Nonnull Function<? super A, ? extends B> function);
 
   static @Nonnull <A> Maybe<A> just(final @Nonnull A value) {
     requireNonNull(value, "value");
@@ -111,6 +92,43 @@ final class Maybe$Just<A> implements Maybe<A> {
   Maybe$Just(A value) {
     assert value != null;
     this.value = value;
+  }
+
+  @Override
+  public @Nonnull <B> Maybe<B> bind(final @Nonnull Function<? super A, ? extends Maybe<B>> function) {
+    requireNonNull(function, "function");
+    return function.$(value());
+  }
+
+  @Override
+  public @Nonnull <B> Maybe<B> apply(final @Nonnull Maybe<? extends Function<? super A, ? extends B>> transformation) {
+    requireNonNull(transformation, "transformation");
+    if (transformation.isNothing()) return Maybe.nothing();
+    else return Maybe.just(transformation.value().$(value()));
+  }
+
+  @Override
+  public @Nonnull Maybe<A> filter(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate, "predicate");
+    return predicate.$(value()) ? this : Maybe.nothing();
+  }
+
+  @Override
+  public @Nonnull <B> Maybe<B> map(final @Nonnull Function<? super A, ? extends B> function) {
+    requireNonNull(function, "function");
+    return Maybe.just(function.$(value()));
+  }
+
+  @Override
+  public <B> B foldRight(final @Nonnull BiFunction<A, B, B> function, B initial) {
+    requireNonNull(function, "function");
+    return function.$(value(), initial);
+  }
+
+  @Override
+  public <B> B foldLeft(final @Nonnull BiFunction<B, A, B> function, B initial) {
+    requireNonNull(function, "function");
+    return function.$(initial, value());
   }
 
   @Override
@@ -156,8 +174,8 @@ enum Maybe$Nothing implements Maybe {
   }
 
   @Override
-  public @Nonnull Maybe map(final @Nonnull Function function) {
-    requireNonNull(function, "function");
+  public @Nonnull Maybe apply(final @Nonnull Maybe transformation) {
+    requireNonNull(transformation, "transformation");
     return this;
   }
 
@@ -180,6 +198,12 @@ enum Maybe$Nothing implements Maybe {
   @Override
   public Object value() {
     return null;
+  }
+
+  @Override
+  public @Nonnull Maybe map(final @Nonnull Function function) {
+    requireNonNull(function, "function");
+    return this;
   }
 
   @Override

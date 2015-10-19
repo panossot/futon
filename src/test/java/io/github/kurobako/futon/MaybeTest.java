@@ -49,6 +49,23 @@ public class MaybeTest {
   }
 
   @Theory
+  public void testApply(final Maybe<Object> mock) {
+    if (mock.isJust()) {
+      assertEquals(mock.apply(Maybe.<Function<Object, String>>just(Object::toString)).value(), mock.value().toString());
+    } else {
+      assertTrue(mock.apply(Maybe.just(o -> o)).isNothing());
+    }
+
+  }
+
+  @Theory
+  public void testApplyNPE(final Maybe<Object> mock) {
+    thrown.expect(NullPointerException.class);
+    //noinspection ConstantConditions
+    mock.apply(null);
+  }
+
+  @Theory
   public void testZipWithFunction(final Maybe<Object> one, final Maybe<Object> another) {
     Maybe<Pair<Object, Object>> zipped = one.zip(another, (fst, snd) -> Maybe.just(Pair.pair(fst, snd)));
     Object left = zipped.value().left;
