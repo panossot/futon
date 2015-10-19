@@ -49,10 +49,10 @@ public interface Either<L, R> extends BiFunctor<L, R>, Foldable<Either<L, R>> {
   }
 
   @Override
-  @Nonnull <X> Either<X, R> mapFirst(@Nonnull Function<? super L, ? extends X> function);
+  <X> Either<X, R> mapFirst(@Nonnull Function<? super L, ? extends X> function);
 
   @Override
-  @Nonnull <X> Either<L, X> mapSecond(@Nonnull Function<? super R, ? extends X> function);
+  <X> Either<L, X> mapSecond(@Nonnull Function<? super R, ? extends X> function);
 
   @Override
   int hashCode();
@@ -70,14 +70,9 @@ public interface Either<L, R> extends BiFunctor<L, R>, Foldable<Either<L, R>> {
     return new Either$Right<>(value);
   }
 
-  static <L, R> Either<L, R> joinLeft(final @Nonnull Either<? extends Either<L, R>, R> wrapper) {
+  static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<? extends Either<L, R>, R> wrapper) {
     requireNonNull(wrapper, "wrapper");
     return wrapper.fold(id(), (Function<R, Either<L, R>>) Either::right);
-  }
-
-  static <L, R> Either<L, R> joinRight(final @Nonnull Either<L, ? extends Either<L, R>> wrapper) {
-    requireNonNull(wrapper, "wrapper");
-    return wrapper.fold((Function<L, Either<L, R>>) Either::left, id());
   }
 }
 
