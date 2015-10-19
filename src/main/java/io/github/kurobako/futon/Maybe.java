@@ -70,6 +70,12 @@ public interface Maybe<A> extends Functor<A>, Foldable<A> {
   @Override
   @Nonnull <B> Maybe<B> map(@Nonnull Function<? super A, ? extends B> function);
 
+  @Override
+  int hashCode();
+
+  @Override
+  boolean equals(Object o);
+
   static @Nonnull <A> Maybe<A> just(final @Nonnull A value) {
     requireNonNull(value, "value");
     return new Maybe$Just<>(value);
@@ -142,7 +148,7 @@ final class Maybe$Just<A> implements Maybe<A> {
   }
 
   @Override
-  public A value() {
+  public @Nonnull A value() {
     return value;
   }
 
@@ -153,9 +159,9 @@ final class Maybe$Just<A> implements Maybe<A> {
 
   @Override
   public boolean equals(final Object o) {
-    if (!(o instanceof Maybe$Just)) return false;
-    Maybe$Just that = (Maybe$Just) o;
-    return this.value.equals(that.value);
+    if (!(o instanceof Maybe)) return false;
+    Maybe that = (Maybe) o;
+    return value.equals(that.value());
   }
 
   @Override
@@ -164,8 +170,8 @@ final class Maybe$Just<A> implements Maybe<A> {
   }
 }
 
-enum Maybe$Nothing implements Maybe {
-  INSTANCE;
+final class Maybe$Nothing implements Maybe {
+  private Maybe$Nothing() {}
 
   @Override
   public @Nonnull Maybe bind(final @Nonnull Function function) {
@@ -219,7 +225,21 @@ enum Maybe$Nothing implements Maybe {
   }
 
   @Override
+  public int hashCode() {
+    return 0;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof Maybe)) return false;
+    Maybe that = (Maybe) o;
+    return that.value() == null;
+  }
+
+  @Override
   public String toString() {
     return "Nothing";
   }
+
+  static final Maybe$Nothing INSTANCE = new Maybe$Nothing();
 }
