@@ -21,7 +21,9 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-public final class Pair<L, R> {
+import static java.util.Objects.requireNonNull;
+
+public final class Pair<L, R> implements BiFunctor<L, R> {
   public final L left;
   public final R right;
 
@@ -34,8 +36,12 @@ public final class Pair<L, R> {
     return pair(right, left);
   }
 
-  public static @Nonnull <L, R> Pair<L, R> pair(final L left, final R right) {
-    return new Pair<>(left, right);
+  @Override
+  public <C, D> Pair<C, D> biMap(final @Nonnull Function<? super L, ? extends C> mapFirst,
+                                      final @Nonnull Function<? super R, ? extends D> mapSecond) {
+    requireNonNull(mapFirst, "mapFirst");
+    requireNonNull(mapSecond, "mapSecond");
+    return pair(mapFirst.$(left), mapSecond.$(right));
   }
 
   @Override
@@ -55,5 +61,9 @@ public final class Pair<L, R> {
   @Override
   public String toString() {
     return String.format("(%s, %s)", left, right);
+  }
+
+  public static @Nonnull <L, R> Pair<L, R> pair(final L left, final R right) {
+    return new Pair<>(left, right);
   }
 }

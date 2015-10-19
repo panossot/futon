@@ -23,17 +23,10 @@ import javax.annotation.Nonnull;
 import static io.github.kurobako.futon.Function.id;
 import static java.util.Objects.requireNonNull;
 
-public interface Either<L, R> extends Foldable<Either<L, R>> {
-  @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function);
+public interface Either<L, R> extends BiFunctor<L, R>, Foldable<Either<L, R>> {
+  @Nonnull <X> Either<L, X> bind(@Nonnull Function<? super R, ? extends Either<L, X>> function);
 
-  @Nonnull <U, V> Either<U, V> biMap(final @Nonnull Function<? super L, ? extends U> ifLeft,
-                                     final @Nonnull Function<? super R, ? extends V> ifRight);
-
-  @Nonnull <X> Either<X, R> mapLeft(final @Nonnull Function<? super L, ? extends X> function);
-
-  @Nonnull <X> Either<L, X> mapRight(final @Nonnull Function<? super R, ? extends X> function);
-
-  <X> X fold(final @Nonnull Function<? super L, ? extends X> ifLeft,
+  <X> X fold(@Nonnull Function<? super L, ? extends X> ifLeft,
                       final @Nonnull Function<? super R, ? extends X> ifRight);
 
   boolean isLeft();
@@ -45,6 +38,20 @@ public interface Either<L, R> extends Foldable<Either<L, R>> {
   @Nonnull Maybe<R> right();
 
   @Nonnull Either<R, L> swap();
+
+  @Override
+  default @Nonnull <U, V> Either<U, V> biMap(@Nonnull Function<? super L, ? extends U> ifLeft,
+                                     @Nonnull Function<? super R, ? extends V> ifRight) {
+    requireNonNull(ifLeft, "ifLeft");
+    requireNonNull(ifRight, "ifRight");
+    return mapFirst(ifLeft).mapSecond(ifRight);
+  }
+
+  @Override
+  @Nonnull <X> Either<X, R> mapFirst(@Nonnull Function<? super L, ? extends X> function);
+
+  @Override
+  @Nonnull <X> Either<L, X> mapSecond(@Nonnull Function<? super R, ? extends X> function);
 
   static @Nonnull <L, R> Either<L, R> left(final @Nonnull L value) {
     requireNonNull(value, "value");
@@ -83,18 +90,8 @@ final class Either$Left<L, R> implements Either<L, R> {
     return (Either<L, X>) this;
   }
 
-  @Nonnull
   @Override
-  @SuppressWarnings("unchecked")
-  public <U, V> Either<U, V> biMap(final @Nonnull Function<? super L, ? extends U> ifLeft, final @Nonnull Function<? super R, ? extends V> ifRight) {
-    requireNonNull(ifLeft, "ifLeft");
-    requireNonNull(ifRight, "ifRight");
-    return (Either<U, V>)mapLeft(ifLeft);
-  }
-
-  @Nonnull
-  @Override
-  public <X> Either<X, R> mapLeft(final @Nonnull Function<? super L, ? extends X> function) {
+  public @Nonnull <X> Either<X, R> mapFirst(final @Nonnull Function<? super L, ? extends X> function) {
     requireNonNull(function, "function");
     return Either.left(function.$(value));
   }
@@ -102,7 +99,7 @@ final class Either$Left<L, R> implements Either<L, R> {
   @Nonnull
   @Override
   @SuppressWarnings("unchecked")
-  public <X> Either<L, X> mapRight(final @Nonnull Function<? super R, ? extends X> function) {
+  public <X> Either<L, X> mapSecond(final @Nonnull Function<? super R, ? extends X> function) {
     requireNonNull(function, "function");
     return (Either<L, X>) this;
   }
@@ -196,17 +193,16 @@ final class Either$Right<L, R> implements Either<L, R> {
     return Either.right(ifRight.$(value));
   }
 
-  @Nonnull
+
   @Override
   @SuppressWarnings("unchecked")
-  public <X> Either<X, R> mapLeft(final @Nonnull Function<? super L, ? extends X> function) {
+  public @Nonnull <X> Either<X, R> mapFirst(final @Nonnull Function<? super L, ? extends X> function) {
     requireNonNull(function, "function");
     return (Either<X, R>) this;
   }
 
-  @Nonnull
   @Override
-  public <X> Either<L, X> mapRight(final @Nonnull Function<? super R, ? extends X> function) {
+  public @Nonnull <X> Either<L, X> mapSecond(final @Nonnull Function<? super R, ? extends X> function) {
     requireNonNull(function, "function");
     return Either.right(function.$(value));
   }

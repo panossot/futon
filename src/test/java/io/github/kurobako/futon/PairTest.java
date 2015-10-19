@@ -34,6 +34,25 @@ public class PairTest {
   }
 
   @Test
+  public void testBiMap() {
+    Pair<String, String> twelve = pair(1, 2).biMap(String::valueOf, String::valueOf);
+    assertEquals(twelve.left, "1");
+    assertEquals(twelve.right, "2");
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testBiMapNPEArg0() {
+    //noinspection ConstantConditions
+    pair(0, 0).biMap(null, Function.<Integer>id());
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testBiMapNPEArg1() {
+    //noinspection ConstantConditions
+    pair(0, 0).biMap(Function.<Integer>id(), null);
+  }
+
+  @Test
   public void testHashCode() {
     Pair<String, String> first = pair("a", "b");
     Pair<String, String> second = pair("a", "b");
