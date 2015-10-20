@@ -27,29 +27,38 @@ public final class Thunk {
 
   static @Nonnull <A> Lazy<A> thunk(final @Nonnull Lazy<A> computation) {
     requireNonNull(computation, "computation");
-    return new Lazy<A>() {
-      private volatile boolean evaluated;
-      private A result;
+    return new DCLThunk<>(computation);
+  }
 
-      @Override
-      public A $() {
-        boolean done = evaluated;
-        if (!done) {
-          synchronized (this) {
-            done = evaluated;
-            if (!done) {
-              result = computation.$();
-              evaluated = true;
-            }
+  private static final class DCLThunk<A> implements Lazy<A> {
+    private volatile boolean evaluated;
+    private Lazy<A> computation;
+    private A result;
+
+    DCLThunk(Lazy<A> computation) {
+      assert computation != null;
+      this.computation = computation;
+    }
+
+    @Override
+    public A $() {
+      boolean done = evaluated;
+      if (!done) {
+        synchronized (this) {
+          done = evaluated;
+          if (!done) {
+            result = computation.$();
+            computation = null;
+            evaluated = true;
           }
         }
-        return result;
       }
+      return result;
+    }
 
-      @Override
-      public String toString() {
-        return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
-      }
-    };
+    @Override
+    public String toString() {
+      return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
+    }
   }
 }
