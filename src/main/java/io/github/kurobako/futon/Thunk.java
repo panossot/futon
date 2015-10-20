@@ -31,8 +31,7 @@ public final class Thunk {
   }
 
   private static final class DCLThunk<A> implements Lazy<A> {
-    private volatile boolean evaluated;
-    private Lazy<A> computation;
+    private volatile Lazy<A> computation;
     private A result;
 
     DCLThunk(Lazy<A> computation) {
@@ -42,14 +41,13 @@ public final class Thunk {
 
     @Override
     public A $() {
-      boolean done = evaluated;
+      boolean done = (computation == null);
       if (!done) {
         synchronized (this) {
-          done = evaluated;
+          done = (computation == null);
           if (!done) {
             result = computation.$();
             computation = null;
-            evaluated = true;
           }
         }
       }
@@ -58,6 +56,7 @@ public final class Thunk {
 
     @Override
     public String toString() {
+      boolean evaluated = (computation == null);
       return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
     }
   }
