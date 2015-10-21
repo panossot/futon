@@ -22,5 +22,5 @@ import javax.annotation.Nonnull;
 
 @FunctionalInterface
 public interface Functor<A> {
-  <B> Functor<B> map(@Nonnull Function<? super A, ? extends B> function);
+  @Nonnull <B> Functor<B> map(@Nonnull Function<? super A, ? extends B> function);
 }

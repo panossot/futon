@@ -32,7 +32,7 @@ public interface Function<A, B> extends Functor<B> {
   }
 
   @Override
-  default <C> Function<A, C> map(final @Nonnull Function<? super B, ? extends C> function) {
+  default @Nonnull <C> Function<A, C> map(final @Nonnull Function<? super B, ? extends C> function) {
     requireNonNull(function, "function");
     return a -> function.$(this.$(a));
   }
