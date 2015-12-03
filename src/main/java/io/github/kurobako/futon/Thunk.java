@@ -22,42 +22,33 @@ import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
-public final class Thunk {
-  private Thunk() {}
+public final class Thunk<A> implements Value<A> {
+  private volatile Value<A> computation;
+  private A result;
 
-  static @Nonnull <A> Lazy<A> thunk(final @Nonnull Lazy<A> computation) {
+  public Thunk(@Nonnull  Value<A> computation) {
     requireNonNull(computation, "computation");
-    return new DCLThunk<>(computation);
+    this.computation = computation;
   }
 
-  private static final class DCLThunk<A> implements Lazy<A> {
-    private volatile Lazy<A> computation;
-    private A result;
-
-    DCLThunk(Lazy<A> computation) {
-      assert computation != null;
-      this.computation = computation;
-    }
-
-    @Override
-    public A $() {
-      boolean done = (computation == null);
-      if (!done) {
-        synchronized (this) {
-          done = (computation == null);
-          if (!done) {
-            result = computation.$();
-            computation = null;
-          }
+  @Override
+  public A $() {
+    boolean done = (computation == null);
+    if (!done) {
+      synchronized (this) {
+        done = (computation == null);
+        if (!done) {
+          result = computation.$();
+          computation = null;
         }
       }
-      return result;
     }
+    return result;
+  }
 
-    @Override
-    public String toString() {
-      boolean evaluated = (computation == null);
-      return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
-    }
+  @Override
+  public String toString() {
+    boolean evaluated = (computation == null);
+    return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
   }
 }
