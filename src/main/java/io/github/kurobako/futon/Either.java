@@ -34,9 +34,11 @@ public interface Either<L, R> extends BiFunctor<L, R>, Foldable<Either<L, R>> {
 
   boolean isRight();
 
-  @Nonnull Maybe<L> left();
+  @Nonnull
+  Optional<L> left();
 
-  @Nonnull Maybe<R> right();
+  @Nonnull
+  Optional<R> right();
 
   @Nonnull Either<R, L> swap();
 
@@ -77,11 +79,11 @@ public interface Either<L, R> extends BiFunctor<L, R>, Foldable<Either<L, R>> {
 }
 
 final class Either$Left<L, R> implements Either<L, R> {
-  private final @Nonnull L value;
+  private final @Nonnull Optional<L> someValue;
 
   Either$Left(L value) {
     assert value != null;
-    this.value = value;
+    this.someValue = Optional.some(value);
   }
 
   @Override
@@ -103,7 +105,7 @@ final class Either$Left<L, R> implements Either<L, R> {
   @Override
   public @Nonnull <X> Either<X, R> mapFirst(final @Nonnull Function<? super L, ? extends X> function) {
     requireNonNull(function, "function");
-    return Either.left(function.$(value));
+    return Either.left(function.$(someValue.value()));
   }
 
   @Override
@@ -118,7 +120,7 @@ final class Either$Left<L, R> implements Either<L, R> {
                     final @Nonnull Function<? super R, ? extends X> ifRight) {
     requireNonNull(ifLeft, "ifLeft");
     requireNonNull(ifRight, "ifRight");
-    return ifLeft.$(value);
+    return ifLeft.$(someValue.value());
   }
 
   @Override
@@ -132,18 +134,20 @@ final class Either$Left<L, R> implements Either<L, R> {
   }
 
   @Override
-  public @Nonnull Maybe<L> left() {
-    return Maybe.just(value);
+  public @Nonnull
+  Optional<L> left() {
+    return someValue;
   }
 
   @Override
-  public @Nonnull Maybe<R> right() {
-    return Maybe.nothing();
+  public @Nonnull
+  Optional<R> right() {
+    return Optional.none();
   }
 
   @Override
   public @Nonnull Either<R, L> swap() {
-    return Either.right(value);
+    return Either.right(someValue.value());
   }
 
   @Override
@@ -160,41 +164,41 @@ final class Either$Left<L, R> implements Either<L, R> {
 
   @Override
   public int hashCode() {
-    return value.hashCode();
+    return someValue.value().hashCode();
   }
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof Either)) return false;
     Either that = (Either) o;
-    return this.value.equals(that.left().value());
+    return this.someValue.value().equals(that.left().value());
   }
 
   @Override
   public String toString() {
-    return "Left " + value;
+    return "Left " + someValue.value();
   }
 }
 
 final class Either$Right<L, R> implements Either<L, R> {
-  private final @Nonnull R value;
+  private final @Nonnull Optional<R> someValue;
 
   Either$Right(R value) {
     assert value != null;
-    this.value = value;
+    this.someValue = Optional.some(value);
   }
 
   @Override
   public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
     requireNonNull(function, "function");
-    return function.$(value);
+    return function.$(someValue.value());
   }
 
   @Override
   public @Nonnull <X> Either<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>>
                                          transformation) {
     requireNonNull(transformation, "transformation");
-    return transformation.bind(f -> Either.right(f.$(value)));
+    return transformation.bind(f -> Either.right(f.$(someValue.value())));
   }
 
   @Override
@@ -202,7 +206,7 @@ final class Either$Right<L, R> implements Either<L, R> {
                                             final @Nonnull Function<? super R, ? extends V> ifRight) {
     requireNonNull(ifLeft, "ifLeft");
     requireNonNull(ifRight, "ifRight");
-    return Either.right(ifRight.$(value));
+    return Either.right(ifRight.$(someValue.value()));
   }
 
   @Override
@@ -215,7 +219,7 @@ final class Either$Right<L, R> implements Either<L, R> {
   @Override
   public @Nonnull <X> Either<L, X> mapSecond(final @Nonnull Function<? super R, ? extends X> function) {
     requireNonNull(function, "function");
-    return Either.right(function.$(value));
+    return Either.right(function.$(someValue.value()));
   }
 
   @Override
@@ -223,7 +227,7 @@ final class Either$Right<L, R> implements Either<L, R> {
                     final @Nonnull Function<? super R, ? extends X> ifRight) {
     requireNonNull(ifLeft, "ifLeft");
     requireNonNull(ifRight, "ifRight");
-    return ifRight.$(value);
+    return ifRight.$(someValue.value());
   }
 
   @Override
@@ -237,18 +241,20 @@ final class Either$Right<L, R> implements Either<L, R> {
   }
 
   @Override
-  public @Nonnull Maybe<L> left() {
-    return Maybe.nothing();
+  public @Nonnull
+  Optional<L> left() {
+    return Optional.none();
   }
 
   @Override
-  public @Nonnull Maybe<R> right() {
-    return Maybe.just(value);
+  public @Nonnull
+  Optional<R> right() {
+    return someValue;
   }
 
   @Override
   public @Nonnull Either<R, L> swap() {
-    return Either.left(value);
+    return Either.left(someValue.value());
   }
 
   @Override
@@ -265,18 +271,18 @@ final class Either$Right<L, R> implements Either<L, R> {
 
   @Override
   public int hashCode() {
-    return value.hashCode();
+    return someValue.value().hashCode();
   }
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof Either)) return false;
    Either that = (Either) o;
-    return this.value.equals(that.right().value());
+    return this.someValue.value().equals(that.right().value());
   }
 
   @Override
   public String toString() {
-    return "Right " + value;
+    return "Right " + someValue.value();
   }
 }
