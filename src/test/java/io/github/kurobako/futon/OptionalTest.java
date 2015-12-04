@@ -35,7 +35,7 @@ public class OptionalTest {
     Optional<String> transformed = mock.bind(o -> Optional.some(o.toString()));
     if (mock.isSome()) {
       assertTrue(transformed.isSome());
-      assertEquals(transformed.value(), o.toString());
+      assertEquals(transformed.asNullable(), o.toString());
     } else {
       assertTrue(transformed.isNone());
     }
@@ -51,7 +51,7 @@ public class OptionalTest {
   @Theory
   public void testApply(final Optional<Object> mock) {
     if (mock.isSome()) {
-      assertEquals(mock.apply(Optional.<Function<Object, String>>some(Object::toString)).value(), mock.value().toString());
+      assertEquals(mock.apply(Optional.<Function<Object, String>>some(Object::toString)).asNullable(), mock.asNullable().toString());
     } else {
       assertTrue(mock.apply(Optional.some(o -> o)).isNone());
     }
@@ -70,7 +70,7 @@ public class OptionalTest {
     Optional<Object> filtered = mock.filter(obj -> obj == o);
     if (mock.isSome()) {
       assertTrue(filtered.isSome());
-      assertEquals(filtered.value(), mock.value());
+      assertEquals(filtered.asNullable(), mock.asNullable());
     } else {
       assertTrue(filtered.isNone());
     }
@@ -141,7 +141,7 @@ public class OptionalTest {
   public void testJust(final Optional<Object> mock) {
     if (mock.isSome()) {
       assertFalse(mock.isNone());
-      assertEquals(mock.value(), o);
+      assertEquals(mock.asNullable(), o);
     }
   }
 
@@ -149,16 +149,16 @@ public class OptionalTest {
   public void testNothing(final Optional<Object> mock) {
     if (mock.isNone()) {
       assertFalse(mock.isSome());
-      assertNull(mock.value());
+      assertNull(mock.asNullable());
     }
   }
 
   @Theory
   public void testMap(final Optional<Object> mock) {
     if (mock.isSome()) {
-      assertEquals(mock.map(o -> o).value(), mock.value());
+      assertEquals(mock.map(o -> o).asNullable(), mock.asNullable());
     } else {
-      assertNull(mock.map(o -> o).value());
+      assertNull(mock.map(o -> o).asNullable());
     }
   }
 
@@ -171,7 +171,7 @@ public class OptionalTest {
 
   @Theory
   public void testStaticJoin(final Optional<Object> mock) {
-    assertEquals(Optional.join(Optional.some(mock)).value(), mock.value());
+    assertEquals(Optional.join(Optional.some(mock)).asNullable(), mock.asNullable());
   }
 
   @Theory
@@ -185,7 +185,7 @@ public class OptionalTest {
   public void testStaticJust() {
     Object value = new Object();
     Optional<Object> just = Optional.some(value);
-    assertEquals(just.value(), value);
+    assertEquals(just.asNullable(), value);
   }
 
   @Theory
