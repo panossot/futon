@@ -24,7 +24,7 @@ import static io.github.kurobako.futon.Function.id;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L, R>> {
-  public abstract @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function);
+  public abstract @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, Either<L, X>> function);
 
   public abstract @Nonnull <X> Either<L, X> apply(final @Nonnull
                                                   Either<L, ? extends Function<? super R, ? extends X>> transformation);
@@ -66,7 +66,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
     return new Right<>(value);
   }
 
-  public static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<? extends Either<L, R>, R> wrapper) {
+  public static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<Either<L, R>, R> wrapper) {
     requireNonNull(wrapper, "wrapper");
     return wrapper.fold(id(), (Function<R, Either<L, R>>) Either::right);
   }
@@ -81,7 +81,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
+    public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, Either<L, X>> function) {
       requireNonNull(function, "function");
       return (Either<L, X>) this;
     }
@@ -98,7 +98,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
     @Override
     public @Nonnull <X> Either<X, R> mapFirst(final @Nonnull Function<? super L, ? extends X> function) {
       requireNonNull(function, "function");
-      return Either.left(function.$(someValue.asNullable()));
+      return Either.left(function.$(someValue.value()));
     }
 
     @Override
@@ -113,7 +113,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
                       final @Nonnull Function<? super R, ? extends X> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return ifLeft.$(someValue.asNullable());
+      return ifLeft.$(someValue.value());
     }
 
     @Override
@@ -132,6 +132,10 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
       return someValue;
     }
 
+    @Nonnull L val() {
+      return someValue.value();
+    }
+
     @Override
     public @Nonnull
     Optional<R> right() {
@@ -140,7 +144,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
 
     @Override
     public @Nonnull Either<R, L> swap() {
-      return Either.right(someValue.asNullable());
+      return Either.right(someValue.value());
     }
 
     @Override
@@ -157,19 +161,19 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
 
     @Override
     public int hashCode() {
-      return someValue.asNullable().hashCode();
+      return someValue.value().hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof Either)) return false;
       Either that = (Either) o;
-      return this.someValue.asNullable().equals(that.left().asNullable());
+      return this.someValue.value().equals(that.left().asNullable());
     }
 
     @Override
     public String toString() {
-      return "Left " + someValue.asNullable();
+      return "Left " + someValue.value();
     }
   }
 
@@ -182,16 +186,16 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
     }
 
     @Override
-    public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
+    public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, Either<L, X>> function) {
       requireNonNull(function, "function");
-      return function.$(someValue.asNullable());
+      return function.$(someValue.value());
     }
 
     @Override
     public @Nonnull <X> Either<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>>
                                            transformation) {
       requireNonNull(transformation, "transformation");
-      return transformation.bind(f -> Either.right(f.$(someValue.asNullable())));
+      return transformation.bind(f -> Either.right(f.$(someValue.value())));
     }
 
     @Override
@@ -199,7 +203,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
                                               final @Nonnull Function<? super R, ? extends V> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return Either.right(ifRight.$(someValue.asNullable()));
+      return Either.right(ifRight.$(someValue.value()));
     }
 
     @Override
@@ -212,7 +216,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
     @Override
     public @Nonnull <X> Either<L, X> mapSecond(final @Nonnull Function<? super R, ? extends X> function) {
       requireNonNull(function, "function");
-      return Either.right(function.$(someValue.asNullable()));
+      return Either.right(function.$(someValue.value()));
     }
 
     @Override
@@ -220,7 +224,7 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
                       final @Nonnull Function<? super R, ? extends X> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return ifRight.$(someValue.asNullable());
+      return ifRight.$(someValue.value());
     }
 
     @Override
@@ -245,9 +249,13 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
       return someValue;
     }
 
+    @Nonnull R val() {
+      return someValue.value();
+    }
+
     @Override
     public @Nonnull Either<R, L> swap() {
-      return Either.left(someValue.asNullable());
+      return Either.left(someValue.value());
     }
 
     @Override
@@ -264,19 +272,19 @@ public abstract class Either<L, R> implements BiFunctor<L, R>, Foldable<Either<L
 
     @Override
     public int hashCode() {
-      return someValue.asNullable().hashCode();
+      return someValue.value().hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof Either)) return false;
       Either that = (Either) o;
-      return this.someValue.asNullable().equals(that.right().asNullable());
+      return this.someValue.value().equals(that.right().asNullable());
     }
 
     @Override
     public String toString() {
-      return "Right " + someValue.asNullable();
+      return "Right " + someValue.value();
     }
   }
 }

@@ -26,7 +26,7 @@ import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Optional<A> implements Functor<A>, Foldable<A> {
-  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, ? extends Optional<B>> function);
+  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, Optional<B>> function);
 
   public abstract @Nonnull <B> Optional<B> apply(@Nonnull Optional<? extends Function<? super A, ? extends B>> transformation);
 
@@ -73,7 +73,7 @@ public abstract class Optional<A> implements Functor<A>, Foldable<A> {
     return Optional.None.INSTANCE;
   }
 
-  public static @Nonnull <A> Optional<A> join(final @Nonnull Optional<? extends Optional<A>> wrapper) {
+  public static @Nonnull <A> Optional<A> join(final @Nonnull Optional<Optional<A>> wrapper) {
     requireNonNull(wrapper, "wrapper");
     return wrapper.bind(id());
   }
@@ -87,7 +87,7 @@ public abstract class Optional<A> implements Functor<A>, Foldable<A> {
     }
 
     @Override
-    public @Nonnull <B> Optional<B> bind(final @Nonnull Function<? super A, ? extends Optional<B>> function) {
+    public @Nonnull <B> Optional<B> bind(final @Nonnull Function<? super A, Optional<B>> function) {
       requireNonNull(function, "function");
       return function.$(asNullable());
     }
@@ -155,6 +155,10 @@ public abstract class Optional<A> implements Functor<A>, Foldable<A> {
     @Override
     public String toString() {
       return "Some " + value;
+    }
+
+    @Nonnull A value() {
+      return value;
     }
   }
 

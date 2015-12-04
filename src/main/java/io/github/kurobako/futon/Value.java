@@ -50,12 +50,6 @@ public interface Value<A> extends Functor<A>, Foldable<A> {
     return zip(another, (a, b) -> () -> pair(a, b));
   }
 
-  default @Nonnull <B, C> Pair<Value<B>, Value<C>> unzip(final @Nonnull Function<? super A, Pair<B, C>> function) {
-    requireNonNull(function, "function");
-    Pair<B, C> bc = function.$(this.$());
-    return pair(value(bc.left), value(bc.right));
-  }
-
   @Override
   default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
