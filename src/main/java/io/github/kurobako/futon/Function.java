@@ -20,11 +20,27 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
+import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
 public interface Function<A, B> extends Functor<B> {
   B $(A argument);
+
+  default @Nonnull <C> Function<A, C> bind(final @Nonnull
+                                           Function<? super B, ? extends Function<? super A, ? extends C>> function) {
+    requireNonNull(function, "function");
+    return a -> function.$(this.$(a)).$(a);
+  }
+
+  default @Nonnull <C> Function<A, C> apply(final @Nonnull
+                                            Function<? super B, ? extends Function<? super B, ? extends C>> function) {
+    requireNonNull(function, "function");
+    return a -> {
+      B b = Function.this.$(a);
+      return function.$(b).$(b);
+    };
+  }
 
   default @Nonnull <C> Function<C, B> of(final @Nonnull Function<? super C, ? extends A> function) {
     requireNonNull(function, "function");
@@ -39,5 +55,13 @@ public interface Function<A, B> extends Functor<B> {
 
   static @Nonnull <A> Function<A, A> id() {
     return a -> a;
+  }
+
+  static @Nonnull <B> Function<?, B> constant(B value) {
+    return a -> value;
+  }
+
+  static @Nonnull <A, B> Function<A, B> join(final @Nonnull Function<A, ? extends Function<? super A, ? extends B>> wrapper) {
+    return wrapper.bind(id());
   }
 }
