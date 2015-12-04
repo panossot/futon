@@ -24,51 +24,41 @@ import static io.github.kurobako.futon.Function.id;
 import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
-public interface Maybe<A> extends Functor<A>, Foldable<A> {
-  @Nonnull <B> Maybe<B> bind(@Nonnull Function<? super A, ? extends Maybe<B>> function);
+public interface Optional<A> extends Functor<A>, Foldable<A> {
+  @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, ? extends Optional<B>> function);
 
-  @Nonnull <B> Maybe<B> apply(@Nonnull Maybe<? extends Function<? super A, ? extends B>> transformation);
+  @Nonnull <B> Optional<B> apply(@Nonnull Optional<? extends Function<? super A, ? extends B>> transformation);
 
-  default  @Nonnull <B, C> Maybe<C> zip(final @Nonnull Maybe<B> another,
-                                      final @Nonnull BiFunction<? super A, ? super B, ? extends Maybe<C>> function) {
+  @Nonnull
+  Optional<A> filter(@Nonnull Predicate<? super A> predicate);
+
+  default @Nonnull <B> Optional<Pair<A, B>> and(final @Nonnull Optional<B> another) {
     requireNonNull(another, "another");
-    requireNonNull(function, "function");
-    return function.$(this.value(), another.value());
+    if (this.isSome() && another.isSome()) return some(pair(this.value(), another.value()));
+    return none();
   }
 
-  default  @Nonnull <B> Maybe<Pair<A, B>> zip(final @Nonnull Maybe<B> another) {
-    return zip(another, (a, b) -> Maybe.just(pair(a, b)));
-  }
-
-  @Nonnull Maybe<A> filter(@Nonnull Predicate<? super A> predicate);
-
-  default @Nonnull <B> Maybe<Pair<A, B>> and(final @Nonnull Maybe<B> another) {
+  default @Nonnull <B> Optional<Pair<A, B>> or(final @Nonnull Optional<B> another) {
     requireNonNull(another, "another");
-    if (this.isJust() && another.isJust()) return just(pair(this.value(), another.value()));
-    return nothing();
+    if (this.isSome() || another.isSome()) return some(pair(this.value(), another.value()));
+    return none();
   }
 
-  default @Nonnull <B> Maybe<Pair<A, B>> or(final @Nonnull Maybe<B> another) {
+  default @Nonnull <B> Optional<Either<A, B>> xor(final @Nonnull Optional<B> another) {
     requireNonNull(another, "another");
-    if (this.isJust() || another.isJust()) return just(pair(this.value(), another.value()));
-    return nothing();
+    if (this.isSome() && another.isNone()) return some(Either.left(this.value()));
+    if (this.isNone() && another.isSome()) return some(Either.right(another.value()));
+    return none();
   }
 
-  default @Nonnull <B> Maybe<Either<A, B>> xor(final @Nonnull Maybe<B> another) {
-    requireNonNull(another, "another");
-    if (this.isJust() && another.isNothing()) return just(Either.left(this.value()));
-    if (this.isNothing() && another.isJust()) return just(Either.right(another.value()));
-    return nothing();
-  }
+  boolean isSome();
 
-  boolean isJust();
-
-  boolean isNothing();
+  boolean isNone();
 
   A value();
 
   @Override
-  @Nonnull <B> Maybe<B> map(@Nonnull Function<? super A, ? extends B> function);
+  @Nonnull <B> Optional<B> map(@Nonnull Function<? super A, ? extends B> function);
 
   @Override
   int hashCode();
@@ -76,53 +66,54 @@ public interface Maybe<A> extends Functor<A>, Foldable<A> {
   @Override
   boolean equals(Object o);
 
-  static @Nonnull <A> Maybe<A> just(final @Nonnull A value) {
+  static @Nonnull <A> Optional<A> some(final @Nonnull A value) {
     requireNonNull(value, "value");
-    return new Maybe$Just<>(value);
+    return new Optional$Some<>(value);
   }
 
   @SuppressWarnings("unchecked")
-  static @Nonnull <A> Maybe<A> nothing() {
-    return Maybe$Nothing.INSTANCE;
+  static @Nonnull <A> Optional<A> none() {
+    return Optional$None.INSTANCE;
   }
 
-  static @Nonnull <A> Maybe<A> join(final @Nonnull Maybe<? extends Maybe<A>> wrapper) {
+  static @Nonnull <A> Optional<A> join(final @Nonnull Optional<? extends Optional<A>> wrapper) {
     requireNonNull(wrapper, "wrapper");
     return wrapper.bind(id());
   }
 }
 
-final class Maybe$Just<A> implements Maybe<A> {
+final class Optional$Some<A> implements Optional<A> {
   private final @Nonnull A value;
 
-  Maybe$Just(A value) {
+  Optional$Some(A value) {
     assert value != null;
     this.value = value;
   }
 
   @Override
-  public @Nonnull <B> Maybe<B> bind(final @Nonnull Function<? super A, ? extends Maybe<B>> function) {
+  public @Nonnull <B> Optional<B> bind(final @Nonnull Function<? super A, ? extends Optional<B>> function) {
     requireNonNull(function, "function");
     return function.$(value());
   }
 
   @Override
-  public @Nonnull <B> Maybe<B> apply(final @Nonnull Maybe<? extends Function<? super A, ? extends B>> transformation) {
+  public @Nonnull <B> Optional<B> apply(final @Nonnull Optional<? extends Function<? super A, ? extends B>> transformation) {
     requireNonNull(transformation, "transformation");
-    if (transformation.isNothing()) return Maybe.nothing();
-    else return Maybe.just(transformation.value().$(value()));
+    if (transformation.isNone()) return Optional.none();
+    else return Optional.some(transformation.value().$(value()));
   }
 
   @Override
-  public @Nonnull Maybe<A> filter(final @Nonnull Predicate<? super A> predicate) {
+  public @Nonnull
+  Optional<A> filter(final @Nonnull Predicate<? super A> predicate) {
     requireNonNull(predicate, "predicate");
-    return predicate.$(value()) ? this : Maybe.nothing();
+    return predicate.$(value()) ? this : Optional.none();
   }
 
   @Override
-  public @Nonnull <B> Maybe<B> map(final @Nonnull Function<? super A, ? extends B> function) {
+  public @Nonnull <B> Optional<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
-    return Maybe.just(function.$(value()));
+    return Optional.some(function.$(value()));
   }
 
   @Override
@@ -138,12 +129,12 @@ final class Maybe$Just<A> implements Maybe<A> {
   }
 
   @Override
-  public boolean isJust() {
+  public boolean isSome() {
     return true;
   }
 
   @Override
-  public boolean isNothing() {
+  public boolean isNone() {
     return false;
   }
 
@@ -159,45 +150,48 @@ final class Maybe$Just<A> implements Maybe<A> {
 
   @Override
   public boolean equals(final Object o) {
-    if (!(o instanceof Maybe)) return false;
-    Maybe that = (Maybe) o;
+    if (!(o instanceof Optional)) return false;
+    Optional that = (Optional) o;
     return value.equals(that.value());
   }
 
   @Override
   public String toString() {
-    return "Just " + value;
+    return "Some " + value;
   }
 }
 
-final class Maybe$Nothing implements Maybe {
-  private Maybe$Nothing() {}
+final class Optional$None implements Optional {
+  private Optional$None() {}
 
   @Override
-  public @Nonnull Maybe bind(final @Nonnull Function function) {
+  public @Nonnull
+  Optional bind(final @Nonnull Function function) {
     requireNonNull(function, "function");
     return this;
   }
 
   @Override
-  public @Nonnull Maybe apply(final @Nonnull Maybe transformation) {
+  public @Nonnull
+  Optional apply(final @Nonnull Optional transformation) {
     requireNonNull(transformation, "transformation");
     return this;
   }
 
   @Override
-  public @Nonnull  Maybe filter(final @Nonnull Predicate predicate) {
+  public @Nonnull
+  Optional filter(final @Nonnull Predicate predicate) {
     requireNonNull(predicate, "predicate");
     return this;
   }
 
   @Override
-  public boolean isJust() {
+  public boolean isSome() {
     return false;
   }
 
   @Override
-  public boolean isNothing() {
+  public boolean isNone() {
     return true;
   }
 
@@ -207,7 +201,8 @@ final class Maybe$Nothing implements Maybe {
   }
 
   @Override
-  public @Nonnull Maybe map(final @Nonnull Function function) {
+  public @Nonnull
+  Optional map(final @Nonnull Function function) {
     requireNonNull(function, "function");
     return this;
   }
@@ -231,15 +226,15 @@ final class Maybe$Nothing implements Maybe {
 
   @Override
   public boolean equals(final Object o) {
-    if (!(o instanceof Maybe)) return false;
-    Maybe that = (Maybe) o;
+    if (!(o instanceof Optional)) return false;
+    Optional that = (Optional) o;
     return that.value() == null;
   }
 
   @Override
   public String toString() {
-    return "Nothing";
+    return "None";
   }
 
-  static final Maybe$Nothing INSTANCE = new Maybe$Nothing();
+  static final Optional$None INSTANCE = new Optional$None();
 }
