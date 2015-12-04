@@ -57,11 +57,13 @@ public interface Function<A, B> extends Functor<B> {
     return a -> a;
   }
 
-  static @Nonnull <B> Function<?, B> constant(B value) {
+  static @Nonnull <B> Function<?, B> constant(final B value) {
     return a -> value;
   }
 
-  static @Nonnull <A, B> Function<A, B> join(final @Nonnull Function<A, ? extends Function<? super A, ? extends B>> wrapper) {
+  static @Nonnull <A, B> Function<A, B> join(final @Nonnull
+                                             Function<A, ? extends Function<? super A, ? extends B>> wrapper) {
+    requireNonNull(wrapper, "wrapper");
     return wrapper.bind(id());
   }
 }
