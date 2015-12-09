@@ -25,7 +25,7 @@ import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
-public interface Value<A> {
+public interface Value<A> extends Foldable<A> {
   A $();
 
   default @Nonnull <B> Value<B> bind(final @Nonnull Function<? super A, ? extends Value<B>> function) {
@@ -41,6 +41,18 @@ public interface Value<A> {
   default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
     return () -> function.$(this.$());
+  }
+
+  @Override
+  default <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
+    requireNonNull(function, "function");
+    return function.$($(), initial);
+  }
+
+  @Override
+  default <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> function, final B initial) {
+    requireNonNull(function, "function");
+    return function.$(initial, $());
   }
 
   static @Nonnull <A> Value<A> join(final @Nonnull Value<? extends Value<A>> value) {
