@@ -75,7 +75,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public @Nonnull <B> Optional<B> apply(final @Nonnull
                                           Optional<? extends Function<? super A, ? extends B>> optional) {
       requireNonNull(optional, "optional");
-      return bind(a -> optional.bind(f -> some(f.$(a))));
+      return optional.bind(f -> some(f.$(value)));
     }
 
     @Override
@@ -115,7 +115,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     @Override
     public Iterator<A> iterator() {
       return new Iterator<A>() {
-        boolean wasConsumed;
+        private boolean wasConsumed;
 
         @Override
         public boolean hasNext() {
