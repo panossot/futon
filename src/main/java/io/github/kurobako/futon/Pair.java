@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public final class Pair<L, R> implements BiFunctor<L, R> {
+public final class Pair<L, R> {
   public final L left;
   public final R right;
 
@@ -36,12 +36,11 @@ public final class Pair<L, R> implements BiFunctor<L, R> {
     return pair(right, left);
   }
 
-  @Override
-  public <C, D> Pair<C, D> biMap(final @Nonnull Function<? super L, ? extends C> mapFirst,
-                                      final @Nonnull Function<? super R, ? extends D> mapSecond) {
-    requireNonNull(mapFirst, "mapFirst");
-    requireNonNull(mapSecond, "mapSecond");
-    return pair(mapFirst.$(left), mapSecond.$(right));
+  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> left,
+                                          final @Nonnull Function<? super R, ? extends Y> right) {
+    requireNonNull(left, "left");
+    requireNonNull(right, "right");
+    return new Pair<>(left.$(this.left), right.$(this.right));
   }
 
   @Override

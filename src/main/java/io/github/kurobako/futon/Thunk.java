@@ -26,7 +26,7 @@ public final class Thunk<A> implements Value<A> {
   private volatile Value<A> computation;
   private A result;
 
-  public Thunk(@Nonnull  Value<A> computation) {
+  public Thunk(final @Nonnull Value<A> computation) {
     requireNonNull(computation, "computation");
     this.computation = computation;
   }

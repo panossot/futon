@@ -28,6 +28,7 @@ public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
 
   @Override
   default C $(final @Nonnull Pair<A, B> pair) {
+    requireNonNull(pair, "pair");
     return $(pair.left, pair.right);
   }
 
