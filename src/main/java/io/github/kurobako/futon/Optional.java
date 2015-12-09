@@ -173,13 +173,13 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public Object foldRight(@Nonnull BiFunction function, Object initial) {
+    public Object foldRight(final @Nonnull BiFunction function, final Object initial) {
       requireNonNull(function, "function");
       return initial;
     }
 
     @Override
-    public Object foldLeft(@Nonnull BiFunction function, Object initial) {
+    public Object foldLeft(final @Nonnull BiFunction function, final Object initial) {
       requireNonNull(function, "function");
       return initial;
     }
