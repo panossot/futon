@@ -11,7 +11,7 @@ import java.util.Objects;
 import static io.github.kurobako.futon.Function.id;
 import static java.util.Objects.requireNonNull;
 
-public abstract class Optional<A> implements Iterable<A> {
+public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
   public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, Optional<B>> function);
 
   public abstract @Nonnull <B> Optional<B> apply(@Nonnull Optional<? extends Function<? super A, ? extends B>> optional);
@@ -78,6 +78,18 @@ public abstract class Optional<A> implements Iterable<A> {
     @Override
     public boolean isPresent() {
       return true;
+    }
+
+    @Override
+    public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
+      requireNonNull(function, "function");
+      return function.$(value, initial);
+    }
+
+    @Override
+    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> function, final B initial) {
+      requireNonNull(function, "function");
+      return function.$(initial, value);
     }
 
     @Override
@@ -153,6 +165,18 @@ public abstract class Optional<A> implements Iterable<A> {
     @Override
     public boolean isPresent() {
       return false;
+    }
+
+    @Override
+    public Object foldRight(@Nonnull BiFunction function, Object initial) {
+      requireNonNull(function, "function");
+      return initial;
+    }
+
+    @Override
+    public Object foldLeft(@Nonnull BiFunction function, Object initial) {
+      requireNonNull(function, "function");
+      return initial;
     }
 
     @Override

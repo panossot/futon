@@ -7,7 +7,7 @@ import java.util.Objects;
 import static io.github.kurobako.futon.Function.id;
 import static java.util.Objects.requireNonNull;
 
-public abstract class Either<L, R> {
+public abstract class Either<L, R> implements Foldable<R> {
   public abstract @Nonnull <X> Either<L, X> bind(@Nonnull Function<? super R, Either<L, X>> function);
 
   public abstract @Nonnull <X> Either<L, X> apply(@Nonnull Either<L, ? extends Function<? super R, ? extends X>> either);
@@ -100,6 +100,18 @@ public abstract class Either<L, R> {
     }
 
     @Override
+    public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> function, B initial) {
+      requireNonNull(function, "function");
+      return initial;
+    }
+
+    @Override
+    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> function, B initial) {
+      requireNonNull(function, "function");
+      return initial;
+    }
+
+    @Override
     public int hashCode() {
       return someL.hashCode();
     }
@@ -172,6 +184,18 @@ public abstract class Either<L, R> {
       requireNonNull(left, "left");
       requireNonNull(right, "right");
       return right.$(someR.value);
+    }
+
+    @Override
+    public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> function, B initial) {
+      requireNonNull(function, "function");
+      return function.$(someR.value, initial);
+    }
+
+    @Override
+    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> function, B initial) {
+      requireNonNull(function, "function");
+      return function.$(initial, someR.value);
     }
 
     @Override
