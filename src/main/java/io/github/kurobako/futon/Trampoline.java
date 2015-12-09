@@ -121,7 +121,7 @@ public abstract class Trampoline<A> {
 
     @Override
     public String toString() {
-      return "More";
+      return "More#" + System.identityHashCode(this);
     }
   }
 
@@ -162,7 +162,7 @@ public abstract class Trampoline<A> {
 
     @Override
     public String toString() {
-      return "Bind " + trampoline + " with " + function;
+      return "More#" + System.identityHashCode(this);
     }
 
     @Override
