@@ -24,11 +24,11 @@ public abstract class Trampoline<A> {
     Trampoline<A> current = this;
     while (true) {
       Either<Value<Trampoline<A>>, A> either = current.resume();
-      for (Value<Trampoline<A>> value : either.left()) {
+      for (Value<Trampoline<A>> value : either.caseLeft()) {
         current = value.$();
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (final A result : either.right()) {
+      for (final A result : either.caseRight()) {
         return result;
       }
     }
@@ -36,12 +36,12 @@ public abstract class Trampoline<A> {
 
   public abstract @Nonnull Either<Value<Trampoline<A>>, A> resume();
 
-  public @Nonnull Optional<Value<Trampoline<A>>> more() {
-    return resume().left();
+  public @Nonnull Optional<Value<Trampoline<A>>> caseMore() {
+    return resume().caseLeft();
   }
 
-  public @Nonnull Optional<A> done() {
-    return resume().right();
+  public @Nonnull Optional<A> caseDone() {
+    return resume().caseRight();
   }
 
   abstract <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind);

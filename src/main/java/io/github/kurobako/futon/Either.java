@@ -19,23 +19,23 @@ public abstract class Either<L, R> implements Foldable<R> {
 
   public abstract @Nonnull Either<R, L> swap();
 
-  public abstract @Nonnull Optional<L> left();
+  public abstract @Nonnull Optional<L> caseLeft();
 
-  public abstract @Nonnull Optional<R> right();
+  public abstract @Nonnull Optional<R> caseRight();
 
-  public abstract <X> X either(@Nonnull Function<? super L, ? extends X> left,
-                               @Nonnull Function<? super R, ? extends X> right);
+  public abstract <X> X either(@Nonnull Function<? super L, ? extends X> ifLeft,
+                               @Nonnull Function<? super R, ? extends X> ifRight);
 
   public static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<L, Either<L, R>> either) {
     requireNonNull(either, "either");
     return either.bind(id());
   }
 
-  public static @Nonnull <L, R> Either<L, R> left(final L value) {
+  public static @Nonnull <L, R> Either<L, R> caseLeft(final L value) {
     return new Left<>(new Optional.Some<>(value));
   }
 
-  public static @Nonnull <L, R> Either<L, R> right(final R value) {
+  public static @Nonnull <L, R> Either<L, R> caseRight(final R value) {
     return new Right<>(new Optional.Some<>(value));
   }
 
@@ -73,7 +73,7 @@ public abstract class Either<L, R> implements Foldable<R> {
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return left(ifLeft.$(someL.value));
+      return caseLeft(ifLeft.$(someL.value));
     }
 
     @Override
@@ -82,21 +82,21 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull Optional<L> left() {
+    public @Nonnull Optional<L> caseLeft() {
       return someL;
     }
 
     @Override
-    public @Nonnull Optional<R> right() {
+    public @Nonnull Optional<R> caseRight() {
       return Optional.none();
     }
 
     @Override
-    public <X> X either(final @Nonnull Function<? super L, ? extends X> left,
-                        final @Nonnull Function<? super R, ? extends X> right) {
-      requireNonNull(left, "left");
-      requireNonNull(right, "right");
-      return left.$(someL.value);
+    public <X> X either(final @Nonnull Function<? super L, ? extends X> ifLeft,
+                        final @Nonnull Function<? super R, ? extends X> ifRight) {
+      requireNonNull(ifLeft, "left");
+      requireNonNull(ifRight, "right");
+      return ifLeft.$(someL.value);
     }
 
     @Override
@@ -160,7 +160,7 @@ public abstract class Either<L, R> implements Foldable<R> {
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return right(ifRight.$(someR.value));
+      return caseRight(ifRight.$(someR.value));
     }
 
     @Override
@@ -169,21 +169,21 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull Optional<L> left() {
+    public @Nonnull Optional<L> caseLeft() {
       return Optional.none();
     }
 
     @Override
-    public @Nonnull Optional<R> right() {
+    public @Nonnull Optional<R> caseRight() {
       return someR;
     }
 
     @Override
-    public <X> X either(final @Nonnull Function<? super L, ? extends X> left,
-                        final @Nonnull Function<? super R, ? extends X> right) {
-      requireNonNull(left, "left");
-      requireNonNull(right, "right");
-      return right.$(someR.value);
+    public <X> X either(final @Nonnull Function<? super L, ? extends X> ifLeft,
+                        final @Nonnull Function<? super R, ? extends X> ifRight) {
+      requireNonNull(ifLeft, "left");
+      requireNonNull(ifRight, "right");
+      return ifRight.$(someR.value);
     }
 
     @Override
