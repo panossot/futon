@@ -39,6 +39,8 @@ public abstract class Either<L, R> implements Foldable<R> {
     return new Right<>(new Optional.Some<>(value));
   }
 
+  abstract void NOT_FOR_EXTENSION();
+
   final static class Left<L, R> extends Either<L, R> {
     final Optional.Some<L> someL;
 
@@ -127,6 +129,9 @@ public abstract class Either<L, R> implements Foldable<R> {
     public String toString() {
       return "Left " + someL.value;
     }
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 
   final static class Right<L, R> extends Either<L, R> {
@@ -214,5 +219,8 @@ public abstract class Either<L, R> implements Foldable<R> {
     public String toString() {
       return "Right " + someR.value;
     }
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 }

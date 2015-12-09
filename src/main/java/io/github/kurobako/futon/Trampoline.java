@@ -65,6 +65,8 @@ public abstract class Trampoline<A> {
     return suspend(value.map(Trampoline::done));
   }
 
+  abstract void NOT_FOR_EXTENSION();
+
   abstract static class AbstractTrampoline<A> extends Trampoline<A> {
     @Override
     @SuppressWarnings("unchecked")
@@ -80,6 +82,9 @@ public abstract class Trampoline<A> {
       assert ifBind != null;
       return ifNormal.$(this);
     }
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 
   final static class Done<A> extends AbstractTrampoline<A> {
@@ -159,5 +164,8 @@ public abstract class Trampoline<A> {
     public String toString() {
       return "Bind " + trampoline + " with " + function;
     }
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 }

@@ -38,6 +38,8 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     return None.INSTANCE;
   }
 
+  abstract void NOT_FOR_EXTENSION();
+
   final static class Some<A> extends Optional<A> {
     final A value;
 
@@ -127,6 +129,9 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public String toString() {
       return "Some " + value;
     }
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 
   final static class None extends Optional {
@@ -190,5 +195,8 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     static final None INSTANCE = new None();
+
+    @Override
+    void NOT_FOR_EXTENSION() {}
   }
 }
