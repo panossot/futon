@@ -49,11 +49,11 @@ public abstract class Either<L, R> implements Foldable<R> {
     return either.bind(id());
   }
 
-  public static @Nonnull <L, R> Either<L, R> caseLeft(final L value) {
+  public static @Nonnull <L, R> Either<L, R> left(final L value) {
     return new Left<>(new Optional.Some<>(value));
   }
 
-  public static @Nonnull <L, R> Either<L, R> caseRight(final R value) {
+  public static @Nonnull <L, R> Either<L, R> right(final R value) {
     return new Right<>(new Optional.Some<>(value));
   }
 
@@ -93,7 +93,7 @@ public abstract class Either<L, R> implements Foldable<R> {
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return caseLeft(ifLeft.$(someL.value));
+      return left(ifLeft.$(someL.value));
     }
 
     @Override
@@ -183,7 +183,7 @@ public abstract class Either<L, R> implements Foldable<R> {
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
-      return caseRight(ifRight.$(someR.value));
+      return right(ifRight.$(someR.value));
     }
 
     @Override
