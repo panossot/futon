@@ -19,7 +19,6 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,7 +29,9 @@ import static io.github.kurobako.futon.Function.id;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
-  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, Optional<B>> function);
+  Optional() {}
+
+  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, ? extends Optional<B>> function);
 
   public abstract @Nonnull <B> Optional<B> apply(@Nonnull Optional<? extends Function<? super A, ? extends B>> optional);
 
@@ -38,35 +39,34 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
 
   public abstract @Nonnull Optional<A> filter(@Nonnull Predicate<A> predicate);
 
-  public abstract @Nullable A value();
+  public abstract @Nonnull Optional<Some<A>> caseSome();
 
-  public abstract boolean isPresent();
+  public abstract @Nonnull Optional<None> caseNone();
 
-  public static @Nonnull <A> Optional<A> join(final @Nonnull Optional<Optional<A>> optional) {
+  public static @Nonnull <A> Optional<A> join(final @Nonnull Optional<? extends Optional<A>> optional) {
     requireNonNull(optional, "optional");
     return optional.bind(id());
   }
 
-  public static @Nonnull <A> Optional<A> some(final A value) {
-    return new Some<>(value);
+  public static @Nonnull <A> Optional.Some<A> some(final A value) {
+    return new Some<A>(value){};
   }
 
   @SuppressWarnings("unchecked")
-  public static @Nonnull <A> Optional<A> none() {
+  public static @Nonnull <A> Optional.None<A> none() {
     return None.INSTANCE;
   }
 
-  abstract void NOT_FOR_EXTENSION();
-
-  final static class Some<A> extends Optional<A> {
-    final A value;
+  public static abstract class Some<A> extends Optional<A> {
+    public final A value;
 
     Some(final A value) {
+      super();
       this.value = value;
     }
 
     @Override
-    public @Nonnull<B> Optional<B> bind(final @Nonnull Function<? super A, Optional<B>> function) {
+    public @Nonnull<B> Optional<B> bind(final @Nonnull Function<? super A, ? extends Optional<B>> function) {
       requireNonNull(function, "function");
       return function.$(value);
     }
@@ -91,16 +91,6 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public A value() {
-      return value;
-    }
-
-    @Override
-    public boolean isPresent() {
-      return true;
-    }
-
-    @Override
     public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
       requireNonNull(function, "function");
       return function.$(value, initial);
@@ -110,6 +100,16 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> function, final B initial) {
       requireNonNull(function, "function");
       return function.$(initial, value);
+    }
+
+    public @Nonnull Optional<Some<A>> caseSome() {
+      return some(this);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public @Nonnull Optional<None> caseNone() {
+      return none();
     }
 
     @Override
@@ -147,13 +147,16 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public String toString() {
       return "Some " + value;
     }
-
-    @Override
-    void NOT_FOR_EXTENSION() {}
   }
 
-  final static class None extends Optional {
-    private None() {}
+  @SuppressWarnings("unchecked")
+  public static abstract class None<A> extends Optional<A> {
+    private static final None INSTANCE = new None(){};
+    private static final Optional.Some<None> SOME_NONE = some(INSTANCE);
+
+    private None() {
+      super();
+    }
 
     @Override
     public @Nonnull Optional bind(final @Nonnull Function function) {
@@ -181,16 +184,6 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nullable Object value() {
-      return null;
-    }
-
-    @Override
-    public boolean isPresent() {
-      return false;
-    }
-
-    @Override
     public Object foldRight(final @Nonnull BiFunction function, final Object initial) {
       requireNonNull(function, "function");
       return initial;
@@ -203,6 +196,16 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
+    public @Nonnull Optional<Some<A>> caseSome() {
+      return INSTANCE;
+    }
+
+    @Override
+    public @Nonnull Optional<None> caseNone() {
+      return SOME_NONE;
+    }
+
+    @Override
     public Iterator iterator() {
       return Collections.emptyIterator();
     }
@@ -211,10 +214,5 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public String toString() {
       return "None";
     }
-
-    static final None INSTANCE = new None();
-
-    @Override
-    void NOT_FOR_EXTENSION() {}
   }
 }

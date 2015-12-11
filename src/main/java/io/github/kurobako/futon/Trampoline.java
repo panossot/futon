@@ -20,12 +20,17 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
+import static io.github.kurobako.futon.Either.left;
+import static io.github.kurobako.futon.Either.right;
 import static io.github.kurobako.futon.Function.id;
+import static io.github.kurobako.futon.Optional.none;
+import static io.github.kurobako.futon.Optional.some;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Trampoline<A> {
+  Trampoline() {}
 
-  public abstract @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, Trampoline<B>> function);
+  public abstract @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> function);
 
   public @Nonnull <B> Trampoline<B> apply(final @Nonnull
                                           Trampoline<? extends Function<? super A, ? extends B>> trampoline) {
@@ -38,117 +43,130 @@ public abstract class Trampoline<A> {
     return bind(a -> done(function.$(a)));
   }
 
+  public abstract @Nonnull Either<Value<Trampoline<A>>, A> resume();
+
   public final A run() {
     Trampoline<A> current = this;
     while (true) {
       Either<Value<Trampoline<A>>, A> either = current.resume();
-      for (Value<Trampoline<A>> value : either.caseLeft()) {
-        current = value.$();
+      for (Either.Left<Value<Trampoline<A>>, A> left : either.caseLeft()) {
+        current = left.value.$();
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (final A result : either.caseRight()) {
-        return result;
+      for (final Either.Right<Value<Trampoline<A>>, A> right: either.caseRight()) {
+        return right.value;
       }
     }
   }
 
-  public abstract @Nonnull Either<Value<Trampoline<A>>, A> resume();
+  public abstract @Nonnull Optional<More<A>> caseMore();
 
-  public @Nonnull Optional<Value<Trampoline<A>>> caseMore() {
-    return resume().caseLeft();
-  }
-
-  public @Nonnull Optional<A> caseDone() {
-    return resume().caseRight();
-  }
+  public abstract @Nonnull Optional<Done<A>> caseDone();
 
   abstract <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind);
 
-  public static @Nonnull <A> Trampoline<A> join(final @Nonnull Trampoline<Trampoline<A>> trampoline) {
+  public static @Nonnull <A> Trampoline<A> join(final @Nonnull Trampoline<? extends Trampoline<A>> trampoline) {
     requireNonNull(trampoline, "trampoline");
     return trampoline.bind(id());
   }
 
-  public static @Nonnull <A> Trampoline<A> done(final A value) {
-    return new Done<>(new Either.Right<>(new Optional.Some<>(value)));
+  public static @Nonnull <A> Trampoline.Done<A> done(final A result) {
+    return new Done<A>(result){};
   }
 
-  public static @Nonnull <A> Trampoline<A> suspend(final @Nonnull Value<Trampoline<A>> value) {
-    requireNonNull(value, "value");
-    return new More<>(new Either.Left<>(new Optional.Some<>(value)));
+  public static @Nonnull <A> Trampoline.More<A> suspend(final @Nonnull Value<Trampoline<A>> next) {
+    requireNonNull(next, "next");
+    return new More<A>(next){};
   }
 
-  public static @Nonnull <A> Trampoline<A> lift(final @Nonnull Value<A> value) {
+  public static @Nonnull <A> Trampoline.More<A> lift(final @Nonnull Value<A> value) {
     requireNonNull(value, "value");
     return suspend(value.map(Trampoline::done));
   }
 
-  abstract void NOT_FOR_EXTENSION();
+  public static abstract class Done<A> extends AbstractTrampoline<A> {
+    public final A result;
 
-  abstract static class AbstractTrampoline<A> extends Trampoline<A> {
+    Done(final A result) {
+      super();
+      this.result = result;
+    }
+
+    @Override
+    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
+      return right(result);
+    }
+
+
+    @Override
+    public @Nonnull Optional<More<A>> caseMore() {
+      return none();
+    }
+
+    @Override
+    public @Nonnull Optional<Done<A>> caseDone() {
+      return some(this);
+    }
+
+    @Override
+    public String toString() {
+      return "Done[" + result + "]@" + Integer.toHexString(hashCode());
+    }
+  }
+
+  public static abstract class More<A> extends AbstractTrampoline<A> {
+    public final @Nonnull Value<Trampoline<A>> next;
+
+    More(final @Nonnull Value<Trampoline<A>> next) {
+      super();
+      assert next != null;
+      this.next = next;
+    }
+
+    @Override
+    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
+      return left(next);
+    }
+
+
+    @Override
+    public @Nonnull Optional<More<A>> caseMore() {
+      return some(this);
+    }
+
+    @Override
+    public @Nonnull Optional<Done<A>> caseDone() {
+      return none();
+    }
+  }
+
+  private static abstract class AbstractTrampoline<A> extends Trampoline<A> {
+    AbstractTrampoline() {
+      super();
+    }
+
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, Trampoline<B>> function) {
+    public @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> function) {
       requireNonNull(function, "function");
       return new Bind<>((AbstractTrampoline<Object>)this, (Function<Object, Trampoline<B>>)function);
     }
 
     @Override
-    <R> R dispatch(final @Nonnull Function<AbstractTrampoline<A>, R> ifNormal,
-                   final @Nonnull Function<Bind<A>, R> ifBind) {
+    final <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind) {
       assert ifNormal != null;
       assert ifBind != null;
       return ifNormal.$(this);
     }
-
-    @Override
-    void NOT_FOR_EXTENSION() {}
   }
 
-  final static class Done<A> extends AbstractTrampoline<A> {
-    final Either.Right<Value<Trampoline<A>>, A> rightA;
-
-    Done(final @Nonnull Either.Right<Value<Trampoline<A>>, A> rightA) {
-      assert rightA != null;
-      this.rightA = rightA;
-    }
-
-    @Override
-    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
-      return rightA;
-    }
-
-    @Override
-    public String toString() {
-      return "Done " + rightA.someR.value;
-    }
-  }
-
-  final static class More<A> extends AbstractTrampoline<A> {
-    final Either.Left<Value<Trampoline<A>>, A> leftV;
-
-    More(final @Nonnull Either.Left<Value<Trampoline<A>>, A> leftV) {
-      assert leftV != null;
-      this.leftV = leftV;
-    }
-
-    @Override
-    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
-      return leftV;
-    }
-
-    @Override
-    public String toString() {
-      return "More#" + System.identityHashCode(this);
-    }
-  }
-
-  final static class Bind<A> extends Trampoline<A> {
+  private static final class Bind<A> extends Trampoline<A> {
     final AbstractTrampoline<Object> trampoline;
     final Function<Object, Trampoline<A>> function;
 
     private Bind(final @Nonnull AbstractTrampoline<Object> trampoline,
                  final @Nonnull Function<Object, Trampoline<A>> function) {
+      super();
       assert trampoline != null;
       assert function != null;
       this.trampoline = trampoline;
@@ -156,19 +174,29 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, Trampoline<B>> function) {
+    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, ? extends Trampoline<B>> function) {
       requireNonNull(function, "function");
       return new Bind<>(this.trampoline, o -> suspend(() -> Bind.this.function.$(o).bind(function)));
     }
 
     @Override
-    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
-      return new Either.Left<>(new Optional.Some<>(trampoline.resume().either(value -> {
+    public @Nonnull Either.Left<Value<Trampoline<A>>, A> resume() {
+      return left(trampoline.resume().either(value -> {
         return value.map(trampoline -> {
           return trampoline.dispatch(at -> at.resume().either(v -> v.$().bind(function), function::$),
           bind -> new Bind<>(bind.trampoline, o -> bind.function.$(o).bind(function)));
         });
-      }, o -> () -> function.$(o))));
+      }, o -> () -> function.$(o)));
+    }
+
+    @Override
+    public @Nonnull Optional<Done<A>> caseDone() {
+      return none();
+    }
+
+    @Override
+    public @Nonnull Optional<More<A>> caseMore() {
+      return some(suspend(resume().value));
     }
 
     @Override
@@ -177,13 +205,5 @@ public abstract class Trampoline<A> {
       assert ifBind != null;
       return ifBind.$(this);
     }
-
-    @Override
-    public String toString() {
-      return "More#" + System.identityHashCode(this);
-    }
-
-    @Override
-    void NOT_FOR_EXTENSION() {}
   }
 }
