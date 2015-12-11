@@ -48,12 +48,12 @@ public abstract class Trampoline<A> {
   public final A run() {
     Trampoline<A> current = this;
     while (true) {
-      Either<Value<Trampoline<A>>, A> either = current.resume();
-      for (Either.Left<Value<Trampoline<A>>, A> left : either.caseLeft()) {
+      final Either<Value<Trampoline<A>>, A> step = current.resume();
+      for (final Either.Left<Value<Trampoline<A>>, A> left : step.caseLeft()) {
         current = left.value.$();
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (final Either.Right<Value<Trampoline<A>>, A> right: either.caseRight()) {
+      for (final Either.Right<Value<Trampoline<A>>, A> right: step.caseRight()) {
         return right.value;
       }
     }
@@ -71,12 +71,12 @@ public abstract class Trampoline<A> {
   }
 
   public static @Nonnull <A> Trampoline.Done<A> done(final A result) {
-    return new Done<A>(result);
+    return new Done<>(result);
   }
 
   public static @Nonnull <A> Trampoline.More<A> suspend(final @Nonnull Value<Trampoline<A>> next) {
     requireNonNull(next, "next");
-    return new More<A>(next);
+    return new More<>(next);
   }
 
   public static @Nonnull <A> Trampoline.More<A> lift(final @Nonnull Value<A> value) {

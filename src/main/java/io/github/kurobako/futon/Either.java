@@ -54,11 +54,11 @@ public abstract class Either<L, R> implements Foldable<R> {
   }
 
   public static @Nonnull <L, R> Either.Right<L, R> right(final R value) {
-    return new Right<L, R>(value);
+    return new Right<>(value);
   }
 
   public static @Nonnull <L, R> Either.Left<L, R> left(final L value) {
-    return new Left<L, R>(value);
+    return new Left<>(value);
   }
 
   public static final class Right<L, R> extends Either<L, R> {
@@ -137,7 +137,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     @Override
     public boolean equals(final Object o) {
       if (!(o instanceof Right)) return false;
-      Right that = (Right) o;
+      final Right that = (Right) o;
       return Objects.equals(this.value, that.value);
     }
 
@@ -226,7 +226,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     @Override
     public boolean equals(final Object o) {
       if (!(o instanceof Left)) return false;
-      Left that = (Left) o;
+      final Left that = (Left) o;
       return Objects.equals(this.value, that.value);
     }
 

@@ -45,15 +45,15 @@ public final class Pair<L, R> {
 
   @Override
   public int hashCode() {
-    int l = Objects.hashCode(left);
-    int r = Objects.hashCode(right);
+    final int l = Objects.hashCode(left);
+    final int r = Objects.hashCode(right);
     return l ^ (((r & 0xFFFF) << 16) | (r >> 16));
   }
 
   @Override
   public boolean equals(final Object o) {
     if (!(o instanceof Pair)) return false;
-    Pair that = (Pair) o;
+    final Pair that = (Pair) o;
     return Objects.equals(this.left, that.left) && Objects.equals(this.right, that.right);
   }
 

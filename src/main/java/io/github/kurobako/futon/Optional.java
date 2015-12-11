@@ -138,7 +138,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     @Override
     public boolean equals(final Object o) {
       if (!(o instanceof Some)) return false;
-      Some that = (Some) o;
+      final Some that = (Some) o;
       return Objects.equals(this.value, that.value);
     }
 

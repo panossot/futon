@@ -35,13 +35,13 @@ public interface Value<A> extends Foldable<A> {
 
   default @Nonnull <B> Value<B> apply(final @Nonnull Value<? extends Function<? super A, ? extends B>> value) {
     requireNonNull(value, "value");
-    B b = value.$().$(this.$());
+    final B b = value.$().$(this.$());
     return () -> b;
   }
 
   default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function, "function");
-    B b = function.$(this.$());
+    final B b = function.$(this.$());
     return () -> b;
   }
 

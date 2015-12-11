@@ -36,7 +36,7 @@ public interface Function<A, B> {
                                             Function<? super B, ? extends Function<? super B, ? extends C>> function) {
     requireNonNull(function, "function");
     return a -> {
-      B b = $(a);
+      final B b = $(a);
       return function.$(b).$(b);
     };
   }
