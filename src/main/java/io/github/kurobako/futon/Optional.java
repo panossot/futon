@@ -49,7 +49,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
   }
 
   public static @Nonnull <A> Optional.Some<A> some(final A value) {
-    return new Some<A>(value){};
+    return new Some<>(value);
   }
 
   @SuppressWarnings("unchecked")
@@ -57,11 +57,10 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     return None.INSTANCE;
   }
 
-  public static abstract class Some<A> extends Optional<A> {
+  public static final class Some<A> extends Optional<A> {
     public final A value;
 
     Some(final A value) {
-      super();
       this.value = value;
     }
 
@@ -150,13 +149,11 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
   }
 
   @SuppressWarnings("unchecked")
-  public static abstract class None<A> extends Optional<A> {
-    private static final None INSTANCE = new None(){};
+  public static final class None<A> extends Optional<A> {
+    private static final None INSTANCE = new None();
     private static final Optional.Some<None> SOME_NONE = some(INSTANCE);
 
-    private None() {
-      super();
-    }
+    private None() {}
 
     @Override
     public @Nonnull Optional bind(final @Nonnull Function function) {

@@ -71,12 +71,12 @@ public abstract class Trampoline<A> {
   }
 
   public static @Nonnull <A> Trampoline.Done<A> done(final A result) {
-    return new Done<A>(result){};
+    return new Done<A>(result);
   }
 
   public static @Nonnull <A> Trampoline.More<A> suspend(final @Nonnull Value<Trampoline<A>> next) {
     requireNonNull(next, "next");
-    return new More<A>(next){};
+    return new More<A>(next);
   }
 
   public static @Nonnull <A> Trampoline.More<A> lift(final @Nonnull Value<A> value) {
@@ -84,11 +84,10 @@ public abstract class Trampoline<A> {
     return suspend(value.map(Trampoline::done));
   }
 
-  public static abstract class Done<A> extends AbstractTrampoline<A> {
+  public static final class Done<A> extends AbstractTrampoline<A> {
     public final A result;
 
     Done(final A result) {
-      super();
       this.result = result;
     }
 
@@ -114,11 +113,10 @@ public abstract class Trampoline<A> {
     }
   }
 
-  public static abstract class More<A> extends AbstractTrampoline<A> {
+  public static final class More<A> extends AbstractTrampoline<A> {
     public final @Nonnull Value<Trampoline<A>> next;
 
     More(final @Nonnull Value<Trampoline<A>> next) {
-      super();
       assert next != null;
       this.next = next;
     }
@@ -141,10 +139,6 @@ public abstract class Trampoline<A> {
   }
 
   private static abstract class AbstractTrampoline<A> extends Trampoline<A> {
-    AbstractTrampoline() {
-      super();
-    }
-
     @Override
     @SuppressWarnings("unchecked")
     public @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> function) {
@@ -166,7 +160,6 @@ public abstract class Trampoline<A> {
 
     private Bind(final @Nonnull AbstractTrampoline<Object> trampoline,
                  final @Nonnull Function<Object, Trampoline<A>> function) {
-      super();
       assert trampoline != null;
       assert function != null;
       this.trampoline = trampoline;

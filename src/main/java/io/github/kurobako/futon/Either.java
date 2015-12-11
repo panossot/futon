@@ -54,18 +54,17 @@ public abstract class Either<L, R> implements Foldable<R> {
   }
 
   public static @Nonnull <L, R> Either.Right<L, R> right(final R value) {
-    return new Right<L, R>(value) {};
+    return new Right<L, R>(value);
   }
 
   public static @Nonnull <L, R> Either.Left<L, R> left(final L value) {
-    return new Left<L, R>(value){};
+    return new Left<L, R>(value);
   }
 
-  public static abstract class Right<L, R> extends Either<L, R> {
+  public static final class Right<L, R> extends Either<L, R> {
     public final R value;
 
     Right(final R value) {
-      super();
       this.value = value;
     }
 
@@ -148,11 +147,10 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
   }
 
-  public static abstract class Left<L, R> extends Either<L, R> {
+  public static final class Left<L, R> extends Either<L, R> {
     public final L value;
 
     Left(final L value) {
-      super();
       this.value = value;
     }
 
