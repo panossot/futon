@@ -36,8 +36,8 @@ public abstract class Either<L, R> implements Foldable<R> {
 
   public abstract @Nonnull <X> Either<L, X> map(@Nonnull Function<? super R, ? extends X> function);
 
-  public abstract @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> either,
-                                                      @Nonnull BiFunction<? super R, ? super X, ? extends Y> function);
+  public abstract @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> another,
+                                                      @Nonnull BiFunction<? super R, ? super X, ? extends Y> zipper);
 
   public abstract @Nonnull <X, Y> Either<X, Y> biMap(@Nonnull Function<? super L, ? extends X> ifLeft,
                                                      @Nonnull Function<? super R, ? extends Y> ifRight);
@@ -90,13 +90,13 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull <X, Y> Either<L, Y> zip(final @Nonnull Either<L, X> either,
-                                            final @Nonnull BiFunction<? super R, ? super X, ? extends Y> function) {
-      requireNonNull(either, "either");
-      requireNonNull(function, "function");
-      if (!(either instanceof Right)) return (Left<L, Y>) either;
-      Right<L, X> that = (Right<L, X>) either;
-      return right(function.$(this.right, that.right));
+    public @Nonnull <X, Y> Either<L, Y> zip(final @Nonnull Either<L, X> another,
+                                            final @Nonnull BiFunction<? super R, ? super X, ? extends Y> zipper) {
+      requireNonNull(another, "another");
+      requireNonNull(zipper, "zipper");
+      if (!(another instanceof Right)) return (Left<L, Y>) another;
+      Right<L, X> that = (Right<L, X>) another;
+      return right(zipper.$(this.right, that.right));
     }
 
     @Override
@@ -190,10 +190,10 @@ public abstract class Either<L, R> implements Foldable<R> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull <X, Y> Left<L, Y> zip(final @Nonnull Either<L, X> either,
-                                             final @Nonnull BiFunction<? super R, ? super X, ? extends Y> function) {
-      requireNonNull(either, "either");
-      requireNonNull(function, "function");
+    public @Nonnull <X, Y> Left<L, Y> zip(final @Nonnull Either<L, X> another,
+                                             final @Nonnull BiFunction<? super R, ? super X, ? extends Y> zipper) {
+      requireNonNull(another, "another");
+      requireNonNull(zipper, "zipper");
       return (Left<L, Y>) this;
     }
 

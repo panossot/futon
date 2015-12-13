@@ -116,15 +116,15 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> list,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
-      requireNonNull(list, "list");
-      requireNonNull(function, "function");
+    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> another,
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+      requireNonNull(another, "another");
+      requireNonNull(zipper, "zipper");
       List<C> result = nil();
       final Iterator<A> ai = this.reverse().iterator();
-      final Iterator<B> bi = list.reverse().iterator();
+      final Iterator<B> bi = another.reverse().iterator();
       while (bi.hasNext() && ai.hasNext()) {
-        result = result.cons(function.$(ai.next(), bi.next()));
+        result = result.cons(zipper.$(ai.next(), bi.next()));
       }
       return result;
     }
@@ -264,10 +264,10 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> list,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
-      requireNonNull(list, "list");
-      requireNonNull(function, "function");
+    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> another,
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+      requireNonNull(another, "another");
+      requireNonNull(zipper, "zipper");
       return (List<C>) this;
     }
 

@@ -37,8 +37,8 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
 
   public abstract @Nonnull <B> Optional<B> map(@Nonnull Function<? super A, ? extends B> function);
 
-  public abstract @Nonnull <B, C> Optional<C> zip(@Nonnull Optional<B> optional,
-                                                  @Nonnull BiFunction<? super A, ? super B, ? extends C> function);
+  public abstract @Nonnull <B, C> Optional<C> zip(@Nonnull Optional<B> another,
+                                                  @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper);
 
   public abstract @Nonnull Optional<A> filter(@Nonnull Predicate<A> predicate);
 
@@ -91,13 +91,13 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B, C> Optional<C> zip(final @Nonnull Optional<B> optional,
-                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
-      requireNonNull(optional, "optional");
-      requireNonNull(function, "function");
-      if (optional instanceof None) return none();
-      Some<B> that = (Some<B>) optional;
-      return some(function.$(this.value, that.value));
+    public @Nonnull <B, C> Optional<C> zip(final @Nonnull Optional<B> another,
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+      requireNonNull(another, "another");
+      requireNonNull(zipper, "zipper");
+      if (another instanceof None) return none();
+      Some<B> that = (Some<B>) another;
+      return some(zipper.$(this.value, that.value));
     }
 
     @Override

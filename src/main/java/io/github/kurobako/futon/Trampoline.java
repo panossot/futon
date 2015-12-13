@@ -43,30 +43,30 @@ public abstract class Trampoline<A> {
     return bind(a -> done(function.$(a)));
   }
 
-  public @Nonnull <B, C> Trampoline<C> zip(final @Nonnull Trampoline<B> trampoline,
-                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
-    requireNonNull(trampoline, "trampoline");
-    requireNonNull(function, "function");
+  public @Nonnull <B, C> Trampoline<C> zip(final @Nonnull Trampoline<B> another,
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+    requireNonNull(another, "another");
+    requireNonNull(zipper, "zipper");
     Either<Value<Trampoline<A>>, A> thisResume = this.resume();
-    Either<Value<Trampoline<B>>, B> thatResume = trampoline.resume();
+    Either<Value<Trampoline<B>>, B> thatResume = another.resume();
     for (Either.Left<Value<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), function));
+        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), zipper));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), function));
+        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), zipper));
       }
     }
     for (Either.Right<Value<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), function));
+        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), zipper));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return done(function.$(thisRight.right, thatRight.right));
+        return done(zipper.$(thisRight.right, thatRight.right));
       }
     }
     assert false;
