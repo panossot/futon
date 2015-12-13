@@ -20,9 +20,7 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static io.github.kurobako.futon.Function.id;
 import static io.github.kurobako.futon.Optional.none;
@@ -35,6 +33,9 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
   public abstract @Nonnull <B> List<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list);
 
   public abstract @Nonnull <B> List<B> map(@Nonnull Function<? super A, ? extends B> function);
+
+  public abstract @Nonnull <B, C> List<C> zip(@Nonnull List<B> list,
+                                              @Nonnull BiFunction<? super A, ? super B, ? extends C> function);
 
   public abstract @Nonnull List<A> filter(@Nonnull Predicate<A> predicate);
 
@@ -111,13 +112,27 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     @Override
     public @Nonnull <B> List<B> map(final @Nonnull Function<? super A, ? extends B> function) {
       requireNonNull(function, "function");
-      return foldLeft((BiFunction<List<B>, A, List<B>>) (bs, a) -> bs.cons(function.$(a)), nil());
+      return foldRight((BiFunction<A, List<B>, List<B>>) (a, bs) -> bs.cons(function.$(a)), nil());
+    }
+
+    @Override
+    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> list,
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
+      requireNonNull(list, "list");
+      requireNonNull(function, "function");
+      List<C> result = nil();
+      final Iterator<A> ai = this.reverse().iterator();
+      final Iterator<B> bi = list.reverse().iterator();
+      while (bi.hasNext() && ai.hasNext()) {
+        result = result.cons(function.$(ai.next(), bi.next()));
+      }
+      return result;
     }
 
     @Override
     public @Nonnull List<A> filter(final @Nonnull Predicate<A> predicate) {
       requireNonNull(predicate, "predicate");
-      return foldLeft((BiFunction<List<A>, A, List<A>>) (as, a) -> predicate.$(a) ? as.cons(a) : as, nil());
+      return foldRight((BiFunction<A, List<A>, List<A>>) (a, as) -> predicate.$(a) ? as.cons(a) : as, nil());
     }
 
     @Override
@@ -201,17 +216,25 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
 
     @Override
     public int hashCode() {
-      return super.hashCode();
+      return foldLeft((integer, a) -> integer + Objects.hashCode(a), 31);
     }
 
     @Override
     public boolean equals(final Object o) {
-      return super.equals(o);
+      if (!(o instanceof List)) return false;
+      List that = (List) o;
+      if (this.length != that.length()) return false;
+      final Iterator<A> thisI = this.iterator();
+      final Iterator thatI = that.iterator();
+      while (thisI.hasNext() && thatI.hasNext()) {
+        if (!Objects.equals(thisI.next(), thatI.next())) return false;
+      }
+      return true;
     }
 
     @Override
     public String toString() {
-      return foldLeft(StringBuilder::append, new StringBuilder()).toString();
+      return foldLeft((sj, a) -> sj.add(String.valueOf(a)), new StringJoiner(", ", "[", "]")).toString();
     }
   }
 
@@ -238,6 +261,14 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     public @Nonnull <B> List<B> map(final @Nonnull Function<? super A, ? extends B> function) {
       requireNonNull(function, "function");
       return (List<B>) this;
+    }
+
+    @Override
+    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> list,
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
+      requireNonNull(list, "list");
+      requireNonNull(function, "function");
+      return (List<C>) this;
     }
 
     @Override
@@ -282,6 +313,11 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     public Iterator<A> iterator() {
       return Collections.emptyIterator();
     }
+  }
+
+  @Override
+  public String toString() {
+    return "[]";
   }
 }
 
