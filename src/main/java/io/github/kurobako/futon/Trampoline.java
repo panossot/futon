@@ -52,21 +52,21 @@ public abstract class Trampoline<A> {
     for (Either.Left<Value<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> thisLeft.value.$().zip(thatLeft.value.$(), function));
+        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), function));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return suspend(() -> thisLeft.value.$().zip(done(thatRight.value), function));
+        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), function));
       }
     }
     for (Either.Right<Value<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> done(thisRight.value).zip(thatLeft.value.$(), function));
+        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), function));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return done(function.$(thisRight.value, thatRight.value));
+        return done(function.$(thisRight.right, thatRight.right));
       }
     }
     assert false;
@@ -80,11 +80,11 @@ public abstract class Trampoline<A> {
     while (true) {
       final Either<Value<Trampoline<A>>, A> step = current.resume();
       for (final Either.Left<Value<Trampoline<A>>, A> left : step.caseLeft()) {
-        current = left.value.$();
+        current = left.left.$();
       }
       //noinspection LoopStatementThatDoesntLoop
       for (final Either.Right<Value<Trampoline<A>>, A> right: step.caseRight()) {
-        return right.value;
+        return right.right;
       }
     }
   }
@@ -218,7 +218,7 @@ public abstract class Trampoline<A> {
 
     @Override
     public @Nonnull Optional.Some<More<A>> caseMore() {
-      return some(suspend(resume().value));
+      return some(suspend(resume().left));
     }
 
     @Override
