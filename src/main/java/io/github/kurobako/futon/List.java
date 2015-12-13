@@ -94,13 +94,13 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B> List<B> bind(@Nonnull Function<? super A, List<B>> function) {
+    public @Nonnull <B> List<B> bind(final @Nonnull Function<? super A, List<B>> function) {
       requireNonNull(function, "function");
       return foldRight((BiFunction<? super A, List<B>, List<B>>) (a, bs) -> bs.append(function.$(a)), nil());
     }
 
     @Override
-    public @Nonnull <B> List<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list) {
+    public @Nonnull <B> List<B> apply(final @Nonnull List<? extends Function<? super A, ? extends B>> list) {
       requireNonNull(list, "list");
       return foldRight((BiFunction<? super A, List<B>, List<B>>) (a, bs) -> bs.append(
         list.foldRight((BiFunction<Function<? super A, ? extends B>, List<B>, List<B>>) (f, bs2) -> bs2.cons(f.$(a)),
@@ -205,8 +205,8 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      return super.equals(obj);
+    public boolean equals(final Object o) {
+      return super.equals(o);
     }
 
     @Override
@@ -223,13 +223,13 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     private Nil() {}
 
     @Override
-    public @Nonnull <B> List<B> bind(@Nonnull Function<? super A, List<B>> function) {
+    public @Nonnull <B> List<B> bind(final @Nonnull Function<? super A, List<B>> function) {
       requireNonNull(function, "function");
       return (List<B>) this;
     }
 
     @Override
-    public @Nonnull <B> List<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list) {
+    public @Nonnull <B> List<B> apply(final @Nonnull List<? extends Function<? super A, ? extends B>> list) {
       requireNonNull(list, "list");
       return (List<B>) this;
     }
