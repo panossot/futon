@@ -36,6 +36,9 @@ public abstract class Either<L, R> implements Foldable<R> {
 
   public abstract @Nonnull <X> Either<L, X> map(@Nonnull Function<? super R, ? extends X> function);
 
+  public abstract @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> either,
+                                                      @Nonnull BiFunction<? super R, ? super X, ? extends Y> function);
+
   public abstract @Nonnull <X, Y> Either<X, Y> biMap(@Nonnull Function<? super L, ? extends X> ifLeft,
                                                      @Nonnull Function<? super R, ? extends Y> ifRight);
 
@@ -81,13 +84,23 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull<X> Either<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
+    public @Nonnull<X> Right<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
       requireNonNull(function, "function");
       return right(function.$(value));
     }
 
     @Override
-    public @Nonnull <X, Y> Either<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
+    public @Nonnull <X, Y> Either<L, Y> zip(final @Nonnull Either<L, X> either,
+                                            final @Nonnull BiFunction<? super R, ? super X, ? extends Y> function) {
+      requireNonNull(either, "either");
+      requireNonNull(function, "function");
+      if (!(either instanceof Right)) return (Left<L, Y>) either;
+      Right<L, X> that = (Right<L, X>) either;
+      return right(function.$(this.value, that.value));
+    }
+
+    @Override
+    public @Nonnull <X, Y> Right<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
@@ -95,7 +108,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull Either.Left<R, L> swap() {
+    public @Nonnull Left<R, L> swap() {
       return left(value);
     }
 
@@ -156,27 +169,36 @@ public abstract class Either<L, R> implements Foldable<R> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull<X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
+    public @Nonnull<X> Left<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
       requireNonNull(function, "function");
-      return (Either<L, X>) this;
+      return (Left<L, X>) this;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull<X> Either<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
+    public @Nonnull<X> Left<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
       requireNonNull(either, "either");
-      return (Either<L, X>) this;
+      return (Left<L, X>) this;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull<X> Either<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
+    public @Nonnull<X> Left<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
       requireNonNull(function, "function");
-      return (Either<L, X>) this;
+      return (Left<L, X>) this;
     }
 
     @Override
-    public @Nonnull <X, Y> Either<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
+    @SuppressWarnings("unchecked")
+    public @Nonnull <X, Y> Left<L, Y> zip(final @Nonnull Either<L, X> either,
+                                             final @Nonnull BiFunction<? super R, ? super X, ? extends Y> function) {
+      requireNonNull(either, "either");
+      requireNonNull(function, "function");
+      return (Left<L, Y>) this;
+    }
+
+    @Override
+    public @Nonnull <X, Y> Left<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
                                               final @Nonnull Function<? super R, ? extends Y> ifRight) {
       requireNonNull(ifLeft, "ifLeft");
       requireNonNull(ifRight, "ifRight");
@@ -184,7 +206,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull Either.Right<R, L> swap() {
+    public @Nonnull Right<R, L> swap() {
       return right(value);
     }
 
