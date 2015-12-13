@@ -43,6 +43,36 @@ public abstract class Trampoline<A> {
     return bind(a -> done(function.$(a)));
   }
 
+  public @Nonnull <B, C> Trampoline<C> zip(final @Nonnull Trampoline<B> trampoline,
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
+    requireNonNull(trampoline, "trampoline");
+    requireNonNull(function, "function");
+    Either<Value<Trampoline<A>>, A> thisResume = this.resume();
+    Either<Value<Trampoline<B>>, B> thatResume = trampoline.resume();
+    for (Either.Left<Value<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
+      //noinspection LoopStatementThatDoesntLoop
+      for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
+        return suspend(() -> thisLeft.value.$().zip(thatLeft.value.$(), function));
+      }
+      //noinspection LoopStatementThatDoesntLoop
+      for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
+        return suspend(() -> thisLeft.value.$().zip(done(thatRight.value), function));
+      }
+    }
+    for (Either.Right<Value<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
+      //noinspection LoopStatementThatDoesntLoop
+      for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
+        return suspend(() -> done(thisRight.value).zip(thatLeft.value.$(), function));
+      }
+      //noinspection LoopStatementThatDoesntLoop
+      for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
+        return done(function.$(thisRight.value, thatRight.value));
+      }
+    }
+    assert false;
+    throw new RuntimeException("assertion failed");
+  }
+
   public abstract @Nonnull Either<Value<Trampoline<A>>, A> resume();
 
   public final A run() {
@@ -95,7 +125,6 @@ public abstract class Trampoline<A> {
     public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
       return right(result);
     }
-
 
     @Override
     public @Nonnull Optional.None<More<A>> caseMore() {
