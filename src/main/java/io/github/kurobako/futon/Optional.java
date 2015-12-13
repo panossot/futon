@@ -97,13 +97,13 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
       return this;
     }
 
-    public @Nonnull Optional<Some<A>> caseSome() {
+    public @Nonnull Optional.Some<Some<A>> caseSome() {
       return some(this);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull Optional<None> caseNone() {
+    public @Nonnull Optional.None<None> caseNone() {
       return none();
     }
 
@@ -195,12 +195,12 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull Optional<Some<A>> caseSome() {
+    public @Nonnull Optional.None<Some<A>> caseSome() {
       return INSTANCE;
     }
 
     @Override
-    public @Nonnull Optional<None> caseNone() {
+    public @Nonnull Optional.Some<None> caseNone() {
       return SOME_NONE;
     }
 

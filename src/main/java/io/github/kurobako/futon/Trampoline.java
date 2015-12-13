@@ -98,12 +98,12 @@ public abstract class Trampoline<A> {
 
 
     @Override
-    public @Nonnull Optional<More<A>> caseMore() {
+    public @Nonnull Optional.None<More<A>> caseMore() {
       return none();
     }
 
     @Override
-    public @Nonnull Optional<Done<A>> caseDone() {
+    public @Nonnull Optional.Some<Done<A>> caseDone() {
       return some(this);
     }
 
@@ -128,12 +128,12 @@ public abstract class Trampoline<A> {
 
 
     @Override
-    public @Nonnull Optional<More<A>> caseMore() {
+    public @Nonnull Optional.Some<More<A>> caseMore() {
       return some(this);
     }
 
     @Override
-    public @Nonnull Optional<Done<A>> caseDone() {
+    public @Nonnull Optional.None<Done<A>> caseDone() {
       return none();
     }
   }
@@ -183,12 +183,12 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Optional<Done<A>> caseDone() {
+    public @Nonnull Optional.None<Done<A>> caseDone() {
       return none();
     }
 
     @Override
-    public @Nonnull Optional<More<A>> caseMore() {
+    public @Nonnull Optional.Some<More<A>> caseMore() {
       return some(suspend(resume().value));
     }
 

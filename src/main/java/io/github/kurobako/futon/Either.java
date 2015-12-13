@@ -108,12 +108,12 @@ public abstract class Either<L, R> implements Foldable<R> {
       return ifRight.$(value);
     }
 
-    public @Nonnull Optional<Left<L, R>> caseLeft() {
+    public @Nonnull Optional.None<Left<L, R>> caseLeft() {
       return none();
     }
 
     @Override
-    public @Nonnull Optional<Right<L, R>> caseRight() {
+    public @Nonnull Optional.Some<Right<L, R>> caseRight() {
       return some(this);
     }
 
@@ -197,12 +197,12 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public @Nonnull Optional<Left<L, R>> caseLeft() {
+    public @Nonnull Optional.Some<Left<L, R>> caseLeft() {
       return some(this);
     }
 
     @Override
-    public @Nonnull Optional<Right<L, R>> caseRight() {
+    public @Nonnull Optional.None<Right<L, R>> caseRight() {
       return none();
     }
 

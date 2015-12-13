@@ -131,12 +131,12 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull Optional<Cons<A>> caseCons() {
+    public @Nonnull Optional.Some<Cons<A>> caseCons() {
       return some(this);
     }
 
     @Override
-    public @Nonnull Optional<Nil> caseNil() {
+    public @Nonnull Optional.None<Nil> caseNil() {
       return none();
     }
 
