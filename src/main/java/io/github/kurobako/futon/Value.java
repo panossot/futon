@@ -45,6 +45,14 @@ public interface Value<A> extends Foldable<A> {
     return () -> b;
   }
 
+  default @Nonnull <B, C> Value<C> zip(final @Nonnull Value<B> another,
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+    requireNonNull(another, "another");
+    requireNonNull(zipper, "zipper");
+    final C c = zipper.$(this.$(), another.$());
+    return () -> c;
+  }
+
   @Override
   default <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
     requireNonNull(function, "function");
