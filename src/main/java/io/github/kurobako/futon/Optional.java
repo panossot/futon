@@ -41,6 +41,8 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
 
   public abstract @Nonnull Optional<A> or(@Nonnull Optional<A> optional);
 
+  public abstract boolean present();
+
   public abstract @Nonnull Optional<Some<A>> caseSome();
 
   public abstract @Nonnull Optional<None> caseNone();
@@ -95,6 +97,11 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public @Nonnull Optional<A> or(final @Nonnull Optional<A> optional) {
       requireNonNull(optional, "optional");
       return this;
+    }
+
+    @Override
+    public boolean present() {
+      return true;
     }
 
     public @Nonnull Optional.Some<Some<A>> caseSome() {
@@ -192,6 +199,11 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     public @Nonnull Optional<A> or(final @Nonnull Optional<A> optional) {
       requireNonNull(optional, "optional");
       return optional;
+    }
+
+    @Override
+    public boolean present() {
+      return false;
     }
 
     @Override
