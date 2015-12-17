@@ -57,7 +57,7 @@ public interface Function<A, B> {
     return function.bind(id());
   }
 
-  static @Nonnull <V> Function<?, V> constant(final V value) {
+  static @Nonnull <A, B> Function<A, B> constant(final B value) {
     return any -> value;
   }
 
