@@ -60,6 +60,11 @@ public interface State<A, S> {
     return s -> pair(s, s);
   }
 
+  static @Nonnull <A, S> State<A, S> getState(final @Nonnull Function<? super S, ? extends A> function) {
+    requireNonNull(function, "function");
+    return s -> pair(function.$(s), s);
+  }
+
   static @Nonnull <S> State<Unit, S> put(final S state) {
     return modify(constant(state));
   }
