@@ -47,13 +47,6 @@ public interface State<A, S> {
     return bind(a -> unit(function.$(a)));
   }
 
-  default @Nonnull <B, C> State<C, S> zip(final @Nonnull State<B, S> another,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
-    requireNonNull(another, "another");
-    requireNonNull(zipper, "zipper");
-    return bind(a -> another.bind(b -> unit(zipper.$(a, b))));
-  }
-
   static @Nonnull <A, S> State<A, S> join(final @Nonnull State<? extends State<A, S>, S> value) {
     requireNonNull(value, "value");
     return value.bind(id());
@@ -63,13 +56,8 @@ public interface State<A, S> {
     return s -> pair(value, s);
   }
 
-  static @Nonnull <A, S> State<A, S> state(final @Nonnull Function<? super S, Pair<A, S>> run) {
-    requireNonNull(run, "run");
-    return run::$;
-  }
-
   static @Nonnull <S> State<S, S> get() {
-    return state(s -> pair(s, s));
+    return s -> pair(s, s);
   }
 
   static @Nonnull <S> State<Unit, S> put(final S state) {
