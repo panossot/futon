@@ -24,13 +24,13 @@ import static java.util.Objects.requireNonNull;
 
 public interface Foldable<A> {
   default  @Nonnull
-  <M extends Semigroup<M>> M fold(final @Nonnull Function<? super A, ? extends M> function, final @Nonnull M empty) {
-    requireNonNull(function, "function");
+  <M extends Semigroup<M>> M fold(final @Nonnull Function<? super A, ? extends M> fold, final @Nonnull M empty) {
+    requireNonNull(fold, "fold");
     requireNonNull(empty, "empty");
-    return foldLeft((m, a) -> m.append(function.$(a)), empty);
+    return foldLeft((m, a) -> m.append(fold.$(a)), empty);
   }
 
-  <B> B foldRight(@Nonnull BiFunction<? super A, ? super B, ? extends B> function, B initial);
+  <B> B foldRight(@Nonnull BiFunction<? super A, ? super B, ? extends B> fold, B initial);
 
-  <B> B foldLeft(@Nonnull BiFunction<? super B, ? super A, ? extends B> function, B initial);
+  <B> B foldLeft(@Nonnull BiFunction<? super B, ? super A, ? extends B> fold, B initial);
 }

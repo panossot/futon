@@ -29,11 +29,11 @@ import static java.util.Objects.requireNonNull;
 public interface State<A, S> {
   @Nonnull Pair<A, S> run(S state);
 
-  default @Nonnull <B> State<B, S> bind(final @Nonnull Function<? super A, ? extends State<B, S>> function) {
-    requireNonNull(function, "function");
+  default @Nonnull <B> State<B, S> bind(final @Nonnull Function<? super A, ? extends State<B, S>> bind) {
+    requireNonNull(bind, "bind");
     return s -> {
       final Pair<A, S> as = State.this.run(s);
-      return function.$(as.left).run(as.right);
+      return bind.$(as.left).run(as.right);
     };
   }
 
@@ -42,14 +42,14 @@ public interface State<A, S> {
     return bind(a -> state.bind(f -> unit(f.$(a))));
   }
 
-  default @Nonnull <B> State<B, S> map(final @Nonnull Function<? super A, ? extends B> function) {
-    requireNonNull(function, "function");
-    return bind(a -> unit(function.$(a)));
+  default @Nonnull <B> State<B, S> map(final @Nonnull Function<? super A, ? extends B> map) {
+    requireNonNull(map, "map");
+    return bind(a -> unit(map.$(a)));
   }
 
-  static @Nonnull <A, S> State<A, S> join(final @Nonnull State<? extends State<A, S>, S> value) {
-    requireNonNull(value, "value");
-    return value.bind(id());
+  static @Nonnull <A, S> State<A, S> join(final @Nonnull State<? extends State<A, S>, S> state) {
+    requireNonNull(state, "state");
+    return state.bind(id());
   }
 
   static @Nonnull <A, S> State<A, S> unit(final A value) {
@@ -60,17 +60,17 @@ public interface State<A, S> {
     return s -> pair(s, s);
   }
 
-  static @Nonnull <A, S> State<A, S> getState(final @Nonnull Function<? super S, ? extends A> function) {
-    requireNonNull(function, "function");
-    return s -> pair(function.$(s), s);
+  static @Nonnull <A, S> State<A, S> getState(final @Nonnull Function<? super S, ? extends A> f) {
+    requireNonNull(f, "f");
+    return s -> pair(f.$(s), s);
   }
 
   static @Nonnull <S> State<Unit, S> put(final S state) {
     return modify(constant(state));
   }
 
-  static @Nonnull <S> State<Unit, S> modify(final Function<? super S, ? extends S> function) {
-    requireNonNull(function, "function");
-    return s -> pair(Unit.INSTANCE, function.$(s));
+  static @Nonnull <S> State<Unit, S> modify(final Function<? super S, ? extends S> f) {
+    requireNonNull(f, "f");
+    return s -> pair(Unit.INSTANCE, f.$(s));
   }
 }

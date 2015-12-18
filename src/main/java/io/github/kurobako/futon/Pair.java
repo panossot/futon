@@ -21,8 +21,6 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 public final class Pair<L, R> {
   public final L left;
   public final R right;
@@ -34,13 +32,6 @@ public final class Pair<L, R> {
 
   public @Nonnull Pair<R, L> swap() {
     return pair(right, left);
-  }
-
-  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> left,
-                                          final @Nonnull Function<? super R, ? extends Y> right) {
-    requireNonNull(left, "left");
-    requireNonNull(right, "right");
-    return new Pair<>(left.$(this.left), right.$(this.right));
   }
 
   @Override

@@ -31,16 +31,16 @@ import static java.util.Objects.requireNonNull;
 public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
   Optional() {}
 
-  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, ? extends Optional<B>> function);
+  public abstract @Nonnull <B> Optional<B> bind(@Nonnull Function<? super A, ? extends Optional<B>> bind);
 
   public abstract @Nonnull <B> Optional<B> apply(@Nonnull Optional<? extends Function<? super A, ? extends B>> optional);
 
-  public abstract @Nonnull <B> Optional<B> map(@Nonnull Function<? super A, ? extends B> function);
+  public abstract @Nonnull <B> Optional<B> map(@Nonnull Function<? super A, ? extends B> map);
 
   public abstract @Nonnull <B, C> Optional<C> zip(@Nonnull Optional<B> another,
-                                                  @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper);
+                                                  @Nonnull BiFunction<? super A, ? super B, ? extends C> zip);
 
-  public abstract @Nonnull Optional<A> filter(@Nonnull Predicate<A> predicate);
+  public abstract @Nonnull Optional<A> filter(@Nonnull Predicate<A> p);
 
   public abstract @Nonnull Optional<A> or(@Nonnull Optional<A> optional);
 
@@ -72,9 +72,9 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull<B> Optional<B> bind(final @Nonnull Function<? super A, ? extends Optional<B>> function) {
-      requireNonNull(function, "function");
-      return function.$(value);
+    public @Nonnull<B> Optional<B> bind(final @Nonnull Function<? super A, ? extends Optional<B>> bind) {
+      requireNonNull(bind, "bind");
+      return bind.$(value);
     }
 
     @Override
@@ -85,25 +85,25 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B> Optional<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-      requireNonNull(function, "function");
-      return some(function.$(value));
+    public @Nonnull <B> Optional<B> map(final @Nonnull Function<? super A, ? extends B> map) {
+      requireNonNull(map, "map");
+      return some(map.$(value));
     }
 
     @Override
     public @Nonnull <B, C> Optional<C> zip(final @Nonnull Optional<B> another,
-                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
       requireNonNull(another, "another");
-      requireNonNull(zipper, "zipper");
+      requireNonNull(zip, "zip");
       if (another instanceof None) return none();
       Some<B> that = (Some<B>) another;
-      return some(zipper.$(this.value, that.value));
+      return some(zip.$(this.value, that.value));
     }
 
     @Override
-    public @Nonnull Optional<A> filter(@Nonnull Predicate<A> predicate) {
-      requireNonNull(predicate, "predicate");
-      return predicate.$(value) ? this : none();
+    public @Nonnull Optional<A> filter(@Nonnull Predicate<A> p) {
+      requireNonNull(p, "p");
+      return p.$(value) ? this : none();
     }
 
     @Override
@@ -128,15 +128,15 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
-      requireNonNull(function, "function");
-      return function.$(value, initial);
+    public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> fold, final B initial) {
+      requireNonNull(fold, "fold");
+      return fold.$(value, initial);
     }
 
     @Override
-    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> function, final B initial) {
-      requireNonNull(function, "function");
-      return function.$(initial, value);
+    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> fold, final B initial) {
+      requireNonNull(fold, "fold");
+      return fold.$(initial, value);
     }
 
     @Override
@@ -184,8 +184,8 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     private None() {}
 
     @Override
-    public @Nonnull Optional bind(final @Nonnull Function function) {
-      requireNonNull(function, "function");
+    public @Nonnull Optional bind(final @Nonnull Function bind) {
+      requireNonNull(bind, "bind");
       return this;
     }
 
@@ -197,22 +197,22 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
 
 
     @Override
-    public @Nonnull Optional map(final @Nonnull Function function) {
-      requireNonNull(function, "function");
+    public @Nonnull Optional map(final @Nonnull Function map) {
+      requireNonNull(map, "map");
       return this;
     }
 
     @Override
     public @Nonnull <B, C> Optional<C> zip(final @Nonnull Optional<B> optional,
-                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
       requireNonNull(optional, "optional");
-      requireNonNull(function, "function");
+      requireNonNull(zip, "zip");
       return (Optional<C>) this;
     }
 
     @Override
-    public @Nonnull Optional filter(@Nonnull Predicate predicate) {
-      requireNonNull(predicate, "predicate");
+    public @Nonnull Optional filter(@Nonnull Predicate p) {
+      requireNonNull(p, "p");
       return this;
     }
 
@@ -238,14 +238,14 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public Object foldRight(final @Nonnull BiFunction function, final Object initial) {
-      requireNonNull(function, "function");
+    public Object foldRight(final @Nonnull BiFunction fold, final Object initial) {
+      requireNonNull(fold, "fold");
       return initial;
     }
 
     @Override
-    public Object foldLeft(final @Nonnull BiFunction function, final Object initial) {
-      requireNonNull(function, "function");
+    public Object foldLeft(final @Nonnull BiFunction fold, final Object initial) {
+      requireNonNull(fold, "fold");
       return initial;
     }
 

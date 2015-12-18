@@ -27,34 +27,34 @@ public interface Function<A, B> {
   B $(A argument);
 
   default @Nonnull <C> Function<A, C> bind(final @Nonnull
-                                           Function<? super B, ? extends Function<? super A, ? extends C>> function) {
-    requireNonNull(function, "function");
-    return a -> function.$($(a)).$(a);
+                                           Function<? super B, ? extends Function<? super A, ? extends C>> bind) {
+    requireNonNull(bind, "bind");
+    return a -> bind.$($(a)).$(a);
   }
 
   default @Nonnull <C> Function<A, C> apply(final @Nonnull
-                                            Function<? super B, ? extends Function<? super B, ? extends C>> function) {
-    requireNonNull(function, "function");
+                                            Function<? super B, ? extends Function<? super B, ? extends C>> f) {
+    requireNonNull(f, "f");
     return a -> {
       final B b = $(a);
-      return function.$(b).$(b);
+      return f.$(b).$(b);
     };
   }
 
-  default @Nonnull <C> Function<A, C> map(final @Nonnull Function<? super B, ? extends C> function) {
-    requireNonNull(function, "function");
-    return a -> function.$($(a));
+  default @Nonnull <C> Function<A, C> map(final @Nonnull Function<? super B, ? extends C> map) {
+    requireNonNull(map, "map");
+    return a -> map.$($(a));
   }
 
-  default @Nonnull <Z> Function<Z, B> of(final @Nonnull Function<? super Z, ? extends A> function) {
-    requireNonNull(function, "function");
-    return z -> $(function.$(z));
+  default @Nonnull <Z> Function<Z, B> of(final @Nonnull Function<? super Z, ? extends A> f) {
+    requireNonNull(f, "f");
+    return z -> $(f.$(z));
   }
 
   static @Nonnull <A, B> Function<A, B> join(final @Nonnull
-                                             Function<A, ? extends Function<? super A, ? extends B>> function) {
-    requireNonNull(function, "function");
-    return function.bind(id());
+                                             Function<A, ? extends Function<? super A, ? extends B>> f) {
+    requireNonNull(f, "f");
+    return f.bind(id());
   }
 
   static @Nonnull <A, B> Function<A, B> constant(final B value) {

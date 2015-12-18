@@ -21,16 +21,15 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
 public interface Value<A> extends Foldable<A> {
   A $();
 
-  default @Nonnull <B> Value<B> bind(final @Nonnull Function<? super A, ? extends Value<B>> function) {
-    requireNonNull(function, "function");
-    return function.$(this.$());
+  default @Nonnull <B> Value<B> bind(final @Nonnull Function<? super A, ? extends Value<B>> bind) {
+    requireNonNull(bind, "bind");
+    return bind.$(this.$());
   }
 
   default @Nonnull <B> Value<B> apply(final @Nonnull Value<? extends Function<? super A, ? extends B>> value) {
@@ -39,30 +38,30 @@ public interface Value<A> extends Foldable<A> {
     return () -> b;
   }
 
-  default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-    requireNonNull(function, "function");
-    final B b = function.$(this.$());
+  default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> map) {
+    requireNonNull(map, "map");
+    final B b = map.$(this.$());
     return () -> b;
   }
 
   default @Nonnull <B, C> Value<C> zip(final @Nonnull Value<B> another,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
     requireNonNull(another, "another");
-    requireNonNull(zipper, "zipper");
-    final C c = zipper.$(this.$(), another.$());
+    requireNonNull(zip, "zip");
+    final C c = zip.$(this.$(), another.$());
     return () -> c;
   }
 
   @Override
-  default <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> function, final B initial) {
-    requireNonNull(function, "function");
-    return function.$(this.$(), initial);
+  default <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> fold, final B initial) {
+    requireNonNull(fold, "fold");
+    return fold.$(this.$(), initial);
   }
 
   @Override
-  default <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> function, final B initial) {
-    requireNonNull(function, "function");
-    return function.$(initial, this.$());
+  default <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> fold, final B initial) {
+    requireNonNull(fold, "fold");
+    return fold.$(initial, this.$());
   }
 
   static @Nonnull <A> Value<A> join(final @Nonnull Value<? extends Value<A>> value) {

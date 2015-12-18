@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class Trampoline<A> {
   Trampoline() {}
 
-  public abstract @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> function);
+  public abstract @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> bind);
 
   public @Nonnull <B> Trampoline<B> apply(final @Nonnull
                                           Trampoline<? extends Function<? super A, ? extends B>> trampoline) {
@@ -38,35 +38,35 @@ public abstract class Trampoline<A> {
     return bind(a -> trampoline.bind(f -> done(f.$(a))));
   }
 
-  public @Nonnull <B> Trampoline<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-    requireNonNull(function, "function");
-    return bind(a -> done(function.$(a)));
+  public @Nonnull <B> Trampoline<B> map(final @Nonnull Function<? super A, ? extends B> map) {
+    requireNonNull(map, "map");
+    return bind(a -> done(map.$(a)));
   }
 
   public @Nonnull <B, C> Trampoline<C> zip(final @Nonnull Trampoline<B> another,
-                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zipper) {
+                                           final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
     requireNonNull(another, "another");
-    requireNonNull(zipper, "zipper");
+    requireNonNull(zip, "zip");
     Either<Value<Trampoline<A>>, A> thisResume = this.resume();
     Either<Value<Trampoline<B>>, B> thatResume = another.resume();
     for (Either.Left<Value<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), zipper));
+        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), zipper));
+        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), zip));
       }
     }
     for (Either.Right<Value<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), zipper));
+        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return done(zipper.$(thisRight.right, thatRight.right));
+        return done(zip.$(thisRight.right, thatRight.right));
       }
     }
     assert false;
@@ -146,6 +146,7 @@ public abstract class Trampoline<A> {
     public final @Nonnull Value<Trampoline<A>> next;
 
     More(final @Nonnull Value<Trampoline<A>> next) {
+      //noinspection ConstantConditions
       assert next != null;
       this.next = next;
     }
@@ -170,14 +171,16 @@ public abstract class Trampoline<A> {
   private static abstract class AbstractTrampoline<A> extends Trampoline<A> {
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull <B> Trampoline<B> bind(@Nonnull Function<? super A, ? extends Trampoline<B>> function) {
-      requireNonNull(function, "function");
-      return new Bind<>((AbstractTrampoline<Object>)this, (Function<Object, Trampoline<B>>)function);
+    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, ? extends Trampoline<B>> bind) {
+      requireNonNull(bind, "bind");
+      return new Bind<>((AbstractTrampoline<Object>)this, (Function<Object, Trampoline<B>>)bind);
     }
 
     @Override
     final <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind) {
+      //noinspection ConstantConditions
       assert ifNormal != null;
+      //noinspection ConstantConditions
       assert ifBind != null;
       return ifNormal.$(this);
     }
@@ -189,26 +192,27 @@ public abstract class Trampoline<A> {
 
     private Bind(final @Nonnull AbstractTrampoline<Object> trampoline,
                  final @Nonnull Function<Object, Trampoline<A>> function) {
+      //noinspection ConstantConditions
       assert trampoline != null;
+      //noinspection ConstantConditions
       assert function != null;
       this.trampoline = trampoline;
       this.function = function;
     }
 
     @Override
-    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, ? extends Trampoline<B>> function) {
-      requireNonNull(function, "function");
-      return new Bind<>(this.trampoline, o -> suspend(() -> Bind.this.function.$(o).bind(function)));
+    public @Nonnull <B> Trampoline<B> bind(final @Nonnull Function<? super A, ? extends Trampoline<B>> bind) {
+      requireNonNull(bind, "bind");
+      return new Bind<>(this.trampoline, o -> suspend(() -> Bind.this.function.$(o).bind(bind)));
     }
 
     @Override
     public @Nonnull Either.Left<Value<Trampoline<A>>, A> resume() {
-      return left(trampoline.resume().either(value -> {
-        return value.map(trampoline -> {
-          return trampoline.dispatch(at -> at.resume().either(v -> v.$().bind(function), function::$),
-          bind -> new Bind<>(bind.trampoline, o -> bind.function.$(o).bind(function)));
-        });
-      }, o -> () -> function.$(o)));
+      return left(trampoline.resume().either(
+       value -> value.map(trampoline -> trampoline.dispatch(
+        at -> at.resume().either(v -> v.$().bind(function), function::$),
+        bind -> new Bind<>(bind.trampoline, o -> bind.function.$(o).bind(function)))),
+      o -> () -> function.$(o)));
     }
 
     @Override
@@ -222,8 +226,11 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    <R> R dispatch(final @Nonnull Function<AbstractTrampoline<A>, R> ifNormal, final @Nonnull Function<Bind<A>, R> ifBind) {
+    <R> R dispatch(final @Nonnull Function<AbstractTrampoline<A>, R> ifNormal,
+                   final @Nonnull Function<Bind<A>, R> ifBind) {
+      //noinspection ConstantConditions
       assert ifNormal != null;
+      //noinspection ConstantConditions
       assert ifBind != null;
       return ifBind.$(this);
     }
