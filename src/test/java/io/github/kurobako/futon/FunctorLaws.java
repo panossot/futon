@@ -23,10 +23,8 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-import javax.annotation.Nonnull;
 
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Pair.pair;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Theories.class)
@@ -51,14 +49,6 @@ public class FunctorLaws {
 
   @DataPoint
   public static Store<Character, Integer> charAt0() {
-    return new Store<Character, Integer>() {
-      private final String s = "The quick brown fox jumps over the lazy dog";
-
-      @Override
-      public @Nonnull
-      Pair<Function<? super Integer, ? extends Character>, Integer> run() {
-        return pair(s::charAt, 0);
-      }
-    };
+    return StoreTest.charAt0();
   }
 }
