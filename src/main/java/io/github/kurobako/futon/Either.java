@@ -56,11 +56,11 @@ public abstract class Either<L, R> implements Foldable<R> {
     return either.bind(id());
   }
 
-  public static @Nonnull <L, R> Either.Right<L, R> right(final R value) {
+  public static @Nonnull <L, R> Right<L, R> right(final R value) {
     return new Right<>(value);
   }
 
-  public static @Nonnull <L, R> Either.Left<L, R> left(final L value) {
+  public static @Nonnull <L, R> Left<L, R> left(final L value) {
     return new Left<>(value);
   }
 
@@ -155,7 +155,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return "Right " + right;
     }
   }
@@ -253,7 +253,7 @@ public abstract class Either<L, R> implements Foldable<R> {
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return "Left " + left;
     }
   }

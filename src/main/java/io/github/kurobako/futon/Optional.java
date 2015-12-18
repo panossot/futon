@@ -55,12 +55,12 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     return optional.bind(id());
   }
 
-  public static @Nonnull <A> Optional.Some<A> some(final A value) {
+  public static @Nonnull <A> Some<A> some(final A value) {
     return new Some<>(value);
   }
 
   @SuppressWarnings("unchecked")
-  public static @Nonnull <A> Optional.None<A> none() {
+  public static @Nonnull <A> None<A> none() {
     return None.INSTANCE;
   }
 
@@ -117,13 +117,13 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
       return true;
     }
 
-    public @Nonnull Optional.Some<Some<A>> caseSome() {
+    public @Nonnull Some<Some<A>> caseSome() {
       return some(this);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nonnull Optional.None<None> caseNone() {
+    public @Nonnull None<None> caseNone() {
       return none();
     }
 
@@ -140,7 +140,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public Iterator<A> iterator() {
+    public @Nonnull Iterator<A> iterator() {
       return new Iterator<A>() {
         private boolean wasConsumed;
 
@@ -171,7 +171,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return "Some " + value;
     }
   }
@@ -179,7 +179,7 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
   @SuppressWarnings("unchecked")
   public static final class None<A> extends Optional<A> {
     private static final None INSTANCE = new None();
-    private static final Optional.Some<None> SOME_NONE = some(INSTANCE);
+    private static final Some<None> SOME_NONE = some(INSTANCE);
 
     private None() {}
 
@@ -228,12 +228,12 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull Optional.None<Some<A>> caseSome() {
+    public @Nonnull None<Some<A>> caseSome() {
       return INSTANCE;
     }
 
     @Override
-    public @Nonnull Optional.Some<None> caseNone() {
+    public @Nonnull Some<None> caseNone() {
       return SOME_NONE;
     }
 
@@ -250,12 +250,12 @@ public abstract class Optional<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public Iterator iterator() {
+    public @Nonnull Iterator iterator() {
       return Collections.emptyIterator();
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return "None";
     }
   }

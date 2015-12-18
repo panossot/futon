@@ -49,7 +49,7 @@ public final class Pair<L, R> {
   }
 
   @Override
-  public String toString() {
+  public @Nonnull String toString() {
     return String.format("(%s, %s)", left, right);
   }
 

@@ -47,7 +47,7 @@ public final class Thunk<A> implements Value<A> {
   }
 
   @Override
-  public String toString() {
+  public @Nonnull String toString() {
     final boolean evaluated = (computation == null);
     return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
   }

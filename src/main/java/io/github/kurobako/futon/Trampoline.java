@@ -137,7 +137,7 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return "Done[" + result + "]@" + Integer.toHexString(hashCode());
     }
   }
@@ -155,7 +155,6 @@ public abstract class Trampoline<A> {
     public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
       return left(next);
     }
-
 
     @Override
     public @Nonnull Optional.Some<More<A>> caseMore() {
@@ -187,8 +186,8 @@ public abstract class Trampoline<A> {
   }
 
   private static final class Bind<A> extends Trampoline<A> {
-    final AbstractTrampoline<Object> trampoline;
-    final Function<Object, Trampoline<A>> function;
+    final @Nonnull AbstractTrampoline<Object> trampoline;
+    final @Nonnull Function<Object, Trampoline<A>> function;
 
     private Bind(final @Nonnull AbstractTrampoline<Object> trampoline,
                  final @Nonnull Function<Object, Trampoline<A>> function) {

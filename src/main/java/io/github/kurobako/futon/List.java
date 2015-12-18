@@ -233,7 +233,7 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public String toString() {
+    public @Nonnull String toString() {
       return foldLeft((sj, a) -> sj.add(String.valueOf(a)), new StringJoiner(", ", "[", "]")).toString();
     }
   }
@@ -316,7 +316,7 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
   }
 
   @Override
-  public String toString() {
+  public @Nonnull String toString() {
     return "[]";
   }
 }
