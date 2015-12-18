@@ -66,10 +66,10 @@ public abstract class List<A> implements Foldable<A>, Iterable<A> {
   }
 
   @SafeVarargs
-  public static @Nonnull <A> Cons<A> list(final A first, final A... last) {
-    List<A> list = nil();
-    for (int i = last.length - 1; i >= 0; i--) list = list.cons(last[i]);
-    return list.cons(first);
+  public static @Nonnull <A> List<A> list(final A... values) {
+    List<A> result = nil();
+    for (int i = values.length - 1; i >= 0; i--) result = result.cons(values[i]);
+    return result;
   }
 
   @SuppressWarnings("unchecked")
