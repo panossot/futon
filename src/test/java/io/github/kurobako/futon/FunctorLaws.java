@@ -23,7 +23,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-
 import static io.github.kurobako.futon.Function.id;
 import static org.junit.Assert.assertEquals;
 
@@ -37,6 +36,13 @@ public class FunctorLaws {
     assertEquals(transformed.extract(), original.extract());
   }
 
+  // fmap id = id
+  @Theory
+  public void testValueMapId(final Value<String> original) {
+    Value<String> transformed = original.map(id());
+    assertEquals(transformed.extract(), original.extract());
+  }
+
   // fmap (p . q) = (fmap p) . (fmap q)
   @Theory
   public void testStoreMapOf(final Store<Character, Integer> data) {
@@ -47,8 +53,21 @@ public class FunctorLaws {
     assertEquals(one.extract(), another.extract());
   }
 
+  // fmap (p . q) = (fmap p) . (fmap q)
+  @Theory
+  public void testValueMapOf(final Value<String> data) {
+    Function<String, char[]> q = String::toCharArray;
+    Function<char[], Integer> p = chars -> chars.length;
+    Value<Integer> one = data.map(p.of(q));
+    Value<Integer> another = data.map(q).map(p);
+    assertEquals(one.extract(), another.extract());
+  }
+
   @DataPoint
   public static Store<Character, Integer> charAt0() {
     return StoreTest.charAt0();
   }
+
+  @DataPoint
+  public static Value<String> foo = () -> "foo";
 }

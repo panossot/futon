@@ -37,12 +37,28 @@ public class ComonadLaws {
     assertEquals(transformed.extract(), original.extract());
   }
 
+  // extend extract = id
+  @Theory
+  public void testValueExtendExtract(final Value<String> original) {
+    Value<String> transformed = original.extend(Value::extract);
+    assertEquals(transformed.extract(), original.extract());
+  }
+
   // extract . extend f  = f
   @Theory
   public void testStoreExtractExtend(final Store<Character, Integer> data) {
     Function<Store<Character, Integer>, Integer> f = store -> store.peeks(i -> i++).hashCode();
     Integer one = data.extend(f).extract();
     Integer another = f.$(data);
+    assertEquals(one, another);
+  }
+
+  // extract . extend f  = f
+  @Theory
+  public void testValueExtractExtend(final Value<String> data) {
+    Function<Value<String>, String> f = val -> val.$().toUpperCase();
+    String one = data.extend(f).extract();
+    String another = f.$(data);
     assertEquals(one, another);
   }
 
@@ -56,10 +72,27 @@ public class ComonadLaws {
     assertEquals(one.extract(), another.extract());
   }
 
+  // extend f . extend g = extend (f . extend g)
+  @Theory
+  public void testValueExtendExtend(final Value<String> data) {
+    Function<Value<char[]>, String> f = val -> new String(val.extract());
+    Function<Value<String>, char[]> g = val -> val.extract().toCharArray();
+    Value<String> one = data.extend(g).extend(f);
+    Value<String> another = data.extend(f.of(store -> store.extend(g)));
+    assertEquals(one.extract(), another.extract());
+  }
+
   // extract . duplicate = id
   @Theory
   public void testStoreExtractDuplicate(final Store<Character, Integer> original) {
     Store<Character, Integer> transformed = original.duplicate().extract();
+    assertEquals(transformed.extract(), original.extract());
+  }
+
+  // extract . duplicate = id
+  @Theory
+  public void testValueExtractDuplicate(final Value<String> original) {
+    Value<String> transformed = original.duplicate().extract();
     assertEquals(transformed.extract(), original.extract());
   }
 
@@ -70,11 +103,26 @@ public class ComonadLaws {
     assertEquals(transformed.extract(), data.extract());
   }
 
+  // fmap extract . duplicate = id
+  @Theory
+  public void testValueMapExtractDuplicate(final Value<String> data) {
+    Value<String> transformed = data.duplicate().map(Value::extract);
+    assertEquals(transformed.extract(), data.extract());
+  }
+
   // duplicate . duplicate = fmap duplicate . duplicate
   @Theory
   public void testStoreDuplicateDuplicate(final Store<Character, Integer> data) {
     Store<Store<Store<Character, Integer>, Integer>, Integer> one = data.duplicate().duplicate();
     Store<Store<Store<Character, Integer>, Integer>, Integer> another = data.duplicate().map(Store::duplicate);
+    assertEquals(one.extract().extract().extract(), another.extract().extract().extract());
+  }
+
+  // duplicate . duplicate = fmap duplicate . duplicate
+  @Theory
+  public void testValueDuplicateDuplicate(final Value<String> data) {
+    Value<Value<Value<String>>> one = data.duplicate().duplicate();
+    Value<Value<Value<String>>> another = data.duplicate().map(Value::duplicate);
     assertEquals(one.extract().extract().extract(), another.extract().extract().extract());
   }
 
@@ -87,11 +135,28 @@ public class ComonadLaws {
     assertEquals(one.extract(), another.extract());
   }
 
+  // extend f  = fmap f . duplicate
+  @Theory
+  public void testValueExtend(final Value<String> data) {
+    Function<Value<String>, String> f = val -> val.extract().toUpperCase();
+    Value<String> one = data.extend(f);
+    Value<String> another = data.duplicate().map(f);
+    assertEquals(one.extract(), another.extract());
+  }
+
   // duplicate = extend id
   @Theory
   public void testStoreDuplicate(final Store<Character, Integer> data) {
     Store<Store<Character, Integer>, Integer> one = data.duplicate();
     Store<Store<Character, Integer>, Integer> another = data.extend(id());
+    assertEquals(one.extract().extract(), another.extract().extract());
+  }
+
+  // duplicate = extend id
+  @Theory
+  public void testValueDuplicate(final Value<String> data) {
+    Value<Value<String>> one = data.duplicate();
+    Value<Value<String>> another = data.extend(id());
     assertEquals(one.extract().extract(), another.extract().extract());
   }
 
@@ -104,8 +169,20 @@ public class ComonadLaws {
     assertEquals(one.extract(), another.extract());
   }
 
+  // fmap f = extend (f . extract)
+  @Theory
+  public void testValueMap(final Value<String> data) {
+    Function<String, Integer> f = String::hashCode;
+    Value<Integer> one = data.map(f);
+    Value<Integer> another = data.extend(f.of(Value::extract));
+    assertEquals(one.extract(), another.extract());
+  }
+
   @DataPoint
   public static Store<Character, Integer> charAt0() {
     return StoreTest.charAt0();
   }
+
+  @DataPoint
+  public static Value<String> foo = () -> "foo";
 }

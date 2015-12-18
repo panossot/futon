@@ -38,6 +38,20 @@ public interface Value<A> extends Foldable<A> {
     return () -> b;
   }
 
+  default @Nonnull A extract() {
+    return $();
+  }
+
+  default @Nonnull Value<Value<A>> duplicate() {
+    return () -> this;
+  }
+
+  default @Nonnull <B> Value<B> extend(final @Nonnull Function<? super Value<A>, ? extends B> extend) {
+    requireNonNull(extend, "extend");
+    B b = extend.$(this);
+    return () -> b;
+  }
+
   default @Nonnull <B> Value<B> map(final @Nonnull Function<? super A, ? extends B> map) {
     requireNonNull(map, "map");
     final B b = map.$(this.$());
