@@ -42,12 +42,12 @@ public interface Store<A, I> {
   }
 
   default @Nonnull Store<A, I> seek(final I index) {
-    return new SimpleStore<>(peek(), index);
+    return store(peek(), index);
   }
 
   default @Nonnull Store<A, I> seeks(final @Nonnull Function<? super I, ? extends I> f) {
     requireNonNull(f, "f");
-    return new SimpleStore<>(peek(), f.$(pos()));
+    return store(peek(), f.$(pos()));
   }
 
   default A extract() {
@@ -60,26 +60,23 @@ public interface Store<A, I> {
 
   default @Nonnull <B> Store<B, I> extend(final @Nonnull Function<? super Store<A, I>, ? extends B> extend) {
     requireNonNull(extend, "extend");
-    return new SimpleStore<>(index -> extend.$(Store.this.seek(index)), pos());
+    return store(index -> extend.$(Store.this.seek(index)), pos());
   }
 
-  default @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> f) {
-    requireNonNull(f, "f");
-    return new SimpleStore<>(peek().map(f), pos());
-  }
-}
-
-final class SimpleStore<A, S> implements Store<A, S> {
-  private final @Nonnull Pair<Function<? super S, ? extends A>, S> run;
-
-  SimpleStore(final Function<? super S, ? extends A> f, final S s) {
-    assert f != null;
-    assert s != null;
-    this.run = pair(f, s);
+  default @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> map) {
+    requireNonNull(map, "map");
+    return store(peek().map(map), pos());
   }
 
-  @Override
-  public @Nonnull Pair<Function<? super S, ? extends A>, S> run() {
-    return run;
+  static @Nonnull <A, I> Store<A, I> store(final @Nonnull Function<? super I, ? extends A> peek, final I pos) {
+    requireNonNull(peek, "peek");
+    return new Store<A, I>() {
+      private final Pair<Function<? super I, ? extends A>, I> run = pair(peek, pos);
+
+      @Override
+      public @Nonnull Pair<Function<? super I, ? extends A>, I> run() {
+        return run;
+      }
+    };
   }
 }
