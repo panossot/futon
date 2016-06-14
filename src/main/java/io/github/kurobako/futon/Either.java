@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,238 +23,297 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Optional.none;
-import static io.github.kurobako.futon.Optional.some;
+import static io.github.kurobako.futon.Maybe.*;
+import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
-public abstract class Either<L, R> implements Foldable<R> {
-  Either() {}
+public interface Either<L, R> extends Foldable<R> {
+  @Nonnull <X> Either<L, X> bind(@Nonnull Function<? super R, ? extends Either<L, X>> function);
 
-  public abstract @Nonnull <X> Either<L, X> bind(@Nonnull Function<? super R, ? extends Either<L, X>> bind);
+  @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> either, @Nonnull BiFunction<? super R, ? super X, ? extends Y> biFunction);
 
-  public abstract @Nonnull <X> Either<L, X> apply(@Nonnull Either<L, ? extends Function<? super R, ? extends X>> either);
+  @Nonnull <X, Y> Pair<? extends Either<L, X>, ? extends Either<L, Y>> unzip(@Nonnull Function<? super R, Pair<? extends X, ? extends Y>> function);
 
-  public abstract @Nonnull <X> Either<L, X> map(@Nonnull Function<? super R, ? extends X> map);
+  @Nonnull <X> Either<L, X> apply(@Nonnull Either<L, ? extends Function<? super R, ? extends X>> either);
 
-  public abstract @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> another,
-                                                   @Nonnull BiFunction<? super R, ? super X, ? extends Y> zip);
+  @Nonnull <X> Either<L, X> map(@Nonnull Function<? super R, ? extends X> function);
 
-  public abstract @Nonnull <X, Y> Either<X, Y> biMap(@Nonnull Function<? super L, ? extends X> ifLeft,
-                                                     @Nonnull Function<? super R, ? extends Y> ifRight);
+  @Nonnull <X, Y> Either<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends Y> right);
 
-  public abstract @Nonnull Either<R, L> swap();
+  @Nonnull Either<R, L> swap();
 
-  public abstract <X> X either(@Nonnull Function<? super L, ? extends X> ifLeft,
-                               @Nonnull Function<? super R, ? extends X> ifRight);
+  <X> X either(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends X> right);
 
-  public abstract @Nonnull Optional<Left<L, R>> caseLeft();
+  @Nonnull Maybe<Left<L, R>> caseLeft();
 
-  public abstract @Nonnull Optional<Right<L, R>> caseRight();
+  @Nonnull Maybe<Right<L, R>> caseRight();
 
-  public static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<L, ? extends Either<L, R>> either) {
-    requireNonNull(either, "either");
+  static @Nonnull <L, R> Either<L, R> join(final @Nonnull Either<L, ? extends Either<L, R>> either) {
+    requireNonNull(either);
     return either.bind(id());
   }
 
-  public static @Nonnull <L, R> Right<L, R> right(final R value) {
-    return new Right<>(value);
+  static @Nonnull <L, R> Left<L, R> left(final L value) {
+    return new Left<L, R>() {
+      @Override
+      public L value() {
+        return value;
+      }
+
+      @Override
+      public @Nonnull <X> Left<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
+        requireNonNull(function);
+        return self();
+      }
+
+      @Override
+      public @Nonnull <X, Y> Left<L, Y> zip(final @Nonnull Either<L, X> either, final @Nonnull BiFunction<? super R, ? super X, ? extends Y> biFunction) {
+        requireNonNull(either);
+        requireNonNull(biFunction);
+        return self();
+      }
+
+      @Override
+      public @Nonnull <X, Y> Pair<? extends Left<L, X>, ? extends Left<L, Y>> unzip(final @Nonnull Function<? super R, Pair<? extends X, ? extends Y>> function) {
+        requireNonNull(function);
+        return pair(self(), self());
+      }
+
+      @Override
+      public @Nonnull <X> Left<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
+        requireNonNull(either);
+        return self();
+      }
+
+      @Override
+      public @Nonnull <X> Left<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
+        requireNonNull(function);
+        return self();
+      }
+
+      @Override
+      public @Nonnull <X, Y> Left<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends Y> right) {
+        requireNonNull(left);
+        requireNonNull(right);
+        return left(left.$(value));
+      }
+
+      @SuppressWarnings("unchecked")
+      private <X> Left<L, X> self() {
+        return (Left<L, X>) this;
+      }
+
+      @Override
+      public @Nonnull Right<R, L> swap() {
+        return right(value);
+      }
+
+      @Override
+      public @Nonnull Just<Left<L, R>> caseLeft() {
+        return just(this);
+      }
+
+      @Override
+      public @Nonnull Nothing<Right<L, R>> caseRight() {
+        return nothing();
+      }
+
+      @Override
+      public <X> X either(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends X> right) {
+        requireNonNull(left);
+        requireNonNull(right);
+        return left.$(value);
+      }
+
+      @Override
+      public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return initial;
+      }
+
+      @Override
+      public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return initial;
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hashCode(value);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (!(obj instanceof Left)) return false;
+        Left<?, ?> that = (Left<?, ?>) obj;
+        return Objects.equals(value, that.value());
+      }
+
+      @Override
+      public @Nonnull String toString() {
+        return "Left " + String.valueOf(value);
+      }
+    };
   }
 
-  public static @Nonnull <L, R> Left<L, R> left(final L value) {
-    return new Left<>(value);
+  static @Nonnull <L, R> Right<L, R> right(final R value) {
+    return new Right<L, R>() {
+      @Override
+      public R value() {
+        return value;
+      }
+
+      @Override
+      public @Nonnull <X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> function) {
+        requireNonNull(function);
+        return function.$(value);
+      }
+
+      @Override
+      public @Nonnull <X, Y> Either<L, Y> zip(final @Nonnull Either<L, X> either, final @Nonnull BiFunction<? super R, ? super X, ? extends Y> biFunction) {
+        requireNonNull(either);
+        requireNonNull(biFunction);
+        return either.map(x -> biFunction.$(value, x));
+      }
+
+      @Override
+      public @Nonnull <X, Y> Pair<? extends Right<L, X>, ? extends Right<L, Y>> unzip(final @Nonnull Function<? super R, Pair<? extends X, ? extends Y>> function) {
+        requireNonNull(function);
+        Pair<? extends X, ? extends Y> xy = function.$(value);
+        return pair(right(xy.first), right(xy.second));
+      }
+
+      @Override
+      public @Nonnull <X> Either<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
+        requireNonNull(either);
+        return either.map(f -> f.$(value));
+      }
+
+      @Override
+      public @Nonnull <X> Right<L, X> map(final @Nonnull Function<? super R, ? extends X> function) {
+        requireNonNull(function);
+        return right(function.$(value));
+      }
+
+      @Override
+      public @Nonnull <X, Y> Right<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends Y> right) {
+        requireNonNull(left);
+        requireNonNull(right);
+        return right(right.$(value));
+      }
+
+      @Override
+      public @Nonnull Left<R, L> swap() {
+        return left(value);
+      }
+
+      @Override
+      public @Nonnull Nothing<Left<L, R>> caseLeft() {
+        return nothing();
+      }
+
+      @Override
+      public @Nonnull Just<Right<L, R>> caseRight() {
+        return just(this);
+      }
+
+      @Override
+      public <X> X either(final @Nonnull Function<? super L, ? extends X> left, final @Nonnull Function<? super R, ? extends X> right) {
+        requireNonNull(left);
+        requireNonNull(right);
+        return right.$(value);
+      }
+
+      @Override
+      public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return biFunction.$(value, initial);
+      }
+
+      @Override
+      public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return biFunction.$(initial, value);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hashCode(value);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (!(obj instanceof Right)) return false;
+        Right<?, ?> that = (Right) obj;
+        return Objects.equals(value, that.value());
+      }
+
+      @Override
+      public @Nonnull String toString() {
+        return "Right " + String.valueOf(value);
+      }
+    };
   }
 
-  public static final class Right<L, R> extends Either<L, R> {
-    public final R right;
-
-    Right(final R value) {
-      this.right = value;
-    }
+  interface Left<L, R> extends Either<L, R> {
+    L value();
 
     @Override
-    public @Nonnull<X> Either<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> bind) {
-      requireNonNull(bind, "bind");
-      return bind.$(right);
-    }
+    @Nonnull <X> Left<L, X> bind(@Nonnull Function<? super R, ? extends Either<L, X>> function);
 
     @Override
-    public @Nonnull<X> Either<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
-      requireNonNull(either, "either");
-      return either.map(f -> f.$(right));
-    }
+    @Nonnull<X, Y> Left<L, Y> zip(@Nonnull Either<L, X> either, @Nonnull BiFunction<? super R, ? super X, ? extends Y> biFunction);
 
     @Override
-    public @Nonnull<X> Right<L, X> map(final @Nonnull Function<? super R, ? extends X> map) {
-      requireNonNull(map, "map");
-      return right(map.$(right));
-    }
+    @Nonnull <X, Y> Pair<? extends Left<L, X>, ? extends Left<L, Y>> unzip(@Nonnull Function<? super R, Pair<? extends X, ? extends Y>> function);
 
     @Override
-    public @Nonnull <X, Y> Either<L, Y> zip(final @Nonnull Either<L, X> another,
-                                            final @Nonnull BiFunction<? super R, ? super X, ? extends Y> zip) {
-      requireNonNull(another, "another");
-      requireNonNull(zip, "zip");
-      if (!(another instanceof Right)) return (Left<L, Y>) another;
-      Right<L, X> that = (Right<L, X>) another;
-      return right(zip.$(this.right, that.right));
-    }
+    @Nonnull <X> Left<L, X> apply(@Nonnull Either<L, ? extends Function<? super R, ? extends X>> either);
 
     @Override
-    public @Nonnull <X, Y> Right<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
-                                             final @Nonnull Function<? super R, ? extends Y> ifRight) {
-      requireNonNull(ifLeft, "ifLeft");
-      requireNonNull(ifRight, "ifRight");
-      return right(ifRight.$(right));
-    }
+    @Nonnull <X> Left<L, X> map(@Nonnull Function<? super R, ? extends X> function);
 
     @Override
-    public @Nonnull Left<R, L> swap() {
-      return left(right);
-    }
-
+    @Nonnull <X, Y> Left<X, Y> biMap(@Nonnull final Function<? super L, ? extends X> left, @Nonnull final Function<? super R, ? extends Y> right);
 
     @Override
-    public <X> X either(final @Nonnull Function<? super L, ? extends X> ifLeft,
-                        final @Nonnull Function<? super R, ? extends X> ifRight) {
-      requireNonNull(ifLeft, "left");
-      requireNonNull(ifRight, "right");
-      return ifRight.$(right);
-    }
-
-    public @Nonnull Optional.None<Left<L, R>> caseLeft() {
-      return none();
-    }
+    @Nonnull Right<R, L> swap();
 
     @Override
-    public @Nonnull Optional.Some<Right<L, R>> caseRight() {
-      return some(this);
-    }
+    @Nonnull Just<Left<L, R>> caseLeft();
 
     @Override
-    public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return fold.$(right, initial);
-    }
-
-    @Override
-    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return fold.$(initial, right);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(right);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (!(o instanceof Right)) return false;
-      final Right that = (Right) o;
-      return Objects.equals(this.right, that.right);
-    }
-
-    @Override
-    public @Nonnull String toString() {
-      return "Right " + right;
-    }
+    @Nonnull Nothing<Right<L, R>> caseRight();
   }
 
-  public static final class Left<L, R> extends Either<L, R> {
-    public final L left;
-
-    Left(final L value) {
-      this.left = value;
-    }
+  interface Right<L, R> extends Either<L, R> {
+    R value();
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @Nonnull<X> Left<L, X> bind(final @Nonnull Function<? super R, ? extends Either<L, X>> bind) {
-      requireNonNull(bind, "bind");
-      return (Left<L, X>) this;
-    }
+    @Nonnull <X> Either<L, X> bind(@Nonnull Function<? super R, ? extends Either<L, X>> function);
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @Nonnull<X> Left<L, X> apply(final @Nonnull Either<L, ? extends Function<? super R, ? extends X>> either) {
-      requireNonNull(either, "either");
-      return (Left<L, X>) this;
-    }
+    @Nonnull <X, Y> Either<L, Y> zip(@Nonnull Either<L, X> either, @Nonnull BiFunction<? super R, ? super X, ? extends Y> biFunction);
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @Nonnull<X> Left<L, X> map(final @Nonnull Function<? super R, ? extends X> map) {
-      requireNonNull(map, "map");
-      return (Left<L, X>) this;
-    }
+    @Nonnull <X, Y> Pair<? extends Right<L, X>, ? extends Right<L, Y>> unzip(@Nonnull Function<? super R, Pair<? extends X, ? extends Y>> function);
 
     @Override
-    @SuppressWarnings("unchecked")
-    public @Nonnull <X, Y> Left<L, Y> zip(final @Nonnull Either<L, X> another,
-                                          final @Nonnull BiFunction<? super R, ? super X, ? extends Y> zip) {
-      requireNonNull(another, "another");
-      requireNonNull(zip, "zip");
-      return (Left<L, Y>) this;
-    }
+    @Nonnull <X> Either<L, X> apply(@Nonnull Either<L, ? extends Function<? super R, ? extends X>> either);
 
     @Override
-    public @Nonnull <X, Y> Left<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> ifLeft,
-                                            final @Nonnull Function<? super R, ? extends Y> ifRight) {
-      requireNonNull(ifLeft, "ifLeft");
-      requireNonNull(ifRight, "ifRight");
-      return left(ifLeft.$(left));
-    }
+    @Nonnull <X> Right<L, X> map(@Nonnull Function<? super R, ? extends X> function);
 
     @Override
-    public @Nonnull Right<R, L> swap() {
-      return right(left);
-    }
+    @Nonnull <X, Y> Right<X, Y> biMap(@Nonnull final Function<? super L, ? extends X> left, @Nonnull final Function<? super R, ? extends Y> right);
 
     @Override
-    public <X> X either(final @Nonnull Function<? super L, ? extends X> ifLeft,
-                        final @Nonnull Function<? super R, ? extends X> ifRight) {
-      requireNonNull(ifLeft, "left");
-      requireNonNull(ifRight, "right");
-      return ifLeft.$(left);
-    }
+    @Nonnull Left<R, L> swap();
 
     @Override
-    public @Nonnull Optional.Some<Left<L, R>> caseLeft() {
-      return some(this);
-    }
+    @Nonnull Nothing<Left<L, R>> caseLeft();
 
     @Override
-    public @Nonnull Optional.None<Right<L, R>> caseRight() {
-      return none();
-    }
-
-    @Override
-    public <B> B foldRight(final @Nonnull BiFunction<? super R, ? super B, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return initial;
-    }
-
-    @Override
-    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super R, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return initial;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(left);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (!(o instanceof Left)) return false;
-      final Left that = (Left) o;
-      return Objects.equals(this.left, that.left);
-    }
-
-    @Override
-    public @Nonnull String toString() {
-      return "Left " + left;
-    }
+    @Nonnull Just<Right<L, R>> caseRight();
   }
 }

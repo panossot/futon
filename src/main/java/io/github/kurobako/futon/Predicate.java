@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,24 +25,24 @@ import static java.util.Objects.requireNonNull;
 @FunctionalInterface
 public interface Predicate<A> extends Function<A, Boolean> {
 
-  default @Nonnull Predicate<A> and(final @Nonnull Predicate<? super A> p) {
-    requireNonNull(p, "p");
-    return a -> this.$(a) && p.$(a);
+  default @Nonnull Predicate<A> and(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return a -> this.$(a) && predicate.$(a);
   }
 
-  default @Nonnull Predicate<A> or(final @Nonnull Predicate<? super A> p) {
-    requireNonNull(p, "p");
-    return a -> this.$(a) || p.$(a);
+  default @Nonnull Predicate<A> or(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return a -> this.$(a) || predicate.$(a);
   }
 
-  default @Nonnull Predicate<A> xor(final @Nonnull Predicate<? super A> p) {
-    requireNonNull(p, "p");
-    return a -> this.$(a) ^ p.$(a);
+  default @Nonnull Predicate<A> xor(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return a -> this.$(a) ^ predicate.$(a);
   }
 
-  static @Nonnull <A> Predicate<A> not(final @Nonnull Predicate<? super A> p) {
-    requireNonNull(p, "p");
-    return a -> !p.$(a);
+  static @Nonnull <A> Predicate<A> not(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return a -> !predicate.$(a);
   }
 
   static @Nonnull <A> Predicate<A> TRUE() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,23 +21,31 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-public final class Pair<L, R> {
-  public final L left;
-  public final R right;
+import static java.util.Objects.requireNonNull;
 
-  private Pair(final L left, final R right) {
-    this.left = left;
-    this.right = right;
+public final class Pair<L, R> {
+  public final L first;
+  public final R second;
+
+  private Pair(final L first, final R second) {
+    this.first = first;
+    this.second = second;
+  }
+
+  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> first, final @Nonnull Function<? super R, ? extends Y> second) {
+    requireNonNull(first);
+    requireNonNull(second);
+    return pair(first.$(this.first), second.$(this.second));
   }
 
   public @Nonnull Pair<R, L> swap() {
-    return pair(right, left);
+    return pair(this.second, this.first);
   }
 
   @Override
   public int hashCode() {
-    final int l = Objects.hashCode(left);
-    final int r = Objects.hashCode(right);
+    final int l = Objects.hashCode(this.first);
+    final int r = Objects.hashCode(this.second);
     return l ^ (((r & 0xFFFF) << 16) | (r >> 16));
   }
 
@@ -45,15 +53,15 @@ public final class Pair<L, R> {
   public boolean equals(final Object o) {
     if (!(o instanceof Pair)) return false;
     final Pair that = (Pair) o;
-    return Objects.equals(this.left, that.left) && Objects.equals(this.right, that.right);
+    return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
   }
 
   @Override
   public @Nonnull String toString() {
-    return String.format("(%s, %s)", left, right);
+    return String.format("(%s, %s)", this.first, this.second);
   }
 
-  public static @Nonnull <L, R> Pair<L, R> pair(final L left, final R right) {
-    return new Pair<>(left, right);
+  public static @Nonnull <L, R> Pair<L, R> pair(final L first, final R second) {
+    return new Pair<>(first, second);
   }
 }

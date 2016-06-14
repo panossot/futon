@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,25 +29,25 @@ public interface Store<A, I> {
   @Nonnull Pair<Function<? super I, ? extends A>, I> run();
 
   default I pos() {
-    return run().right;
+    return run().second;
   }
 
   default @Nonnull Function<? super I, ? extends A> peek() {
-    return run().left;
+    return run().first;
   }
 
-  default A peeks(final @Nonnull Function<? super I, ? extends I> f) {
-    requireNonNull(f, "f");
-    return seeks(f).extract();
+  default A peeks(final @Nonnull Function<? super I, ? extends I> function) {
+    requireNonNull(function);
+    return seeks(function).extract();
   }
 
   default @Nonnull Store<A, I> seek(final I index) {
     return store(peek(), index);
   }
 
-  default @Nonnull Store<A, I> seeks(final @Nonnull Function<? super I, ? extends I> f) {
-    requireNonNull(f, "f");
-    return store(peek(), f.$(pos()));
+  default @Nonnull Store<A, I> seeks(final @Nonnull Function<? super I, ? extends I> function) {
+    requireNonNull(function);
+    return store(peek(), function.$(pos()));
   }
 
   default A extract() {
@@ -58,20 +58,20 @@ public interface Store<A, I> {
     return extend(id());
   }
 
-  default @Nonnull <B> Store<B, I> extend(final @Nonnull Function<? super Store<A, I>, ? extends B> extend) {
-    requireNonNull(extend, "extend");
-    return store(index -> extend.$(Store.this.seek(index)), pos());
+  default @Nonnull <B> Store<B, I> extend(final @Nonnull Function<? super Store<A, I>, ? extends B> function) {
+    requireNonNull(function);
+    return store(index -> function.$(Store.this.seek(index)), pos());
   }
 
-  default @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> map) {
-    requireNonNull(map, "map");
-    return store(peek().map(map), pos());
+  default @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> function) {
+    requireNonNull(function);
+    return store(peek().compose(function), pos());
   }
 
-  static @Nonnull <A, I> Store<A, I> store(final @Nonnull Function<? super I, ? extends A> peek, final I pos) {
-    requireNonNull(peek, "peek");
+  static @Nonnull <A, I> Store<A, I> store(final @Nonnull Function<? super I, ? extends A> function, final I index) {
+    requireNonNull(function);
     return new Store<A, I>() {
-      private final Pair<Function<? super I, ? extends A>, I> run = pair(peek, pos);
+      private final Pair<Function<? super I, ? extends A>, I> run = pair(function, index);
 
       @Override
       public @Nonnull Pair<Function<? super I, ? extends A>, I> run() {

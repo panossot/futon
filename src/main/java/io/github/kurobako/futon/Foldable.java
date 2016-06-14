@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,17 +20,8 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static java.util.Objects.requireNonNull;
-
 public interface Foldable<A> {
-  default  @Nonnull
-  <M extends Semigroup<M>> M fold(final @Nonnull Function<? super A, ? extends M> fold, final @Nonnull M empty) {
-    requireNonNull(fold, "fold");
-    requireNonNull(empty, "empty");
-    return foldLeft((m, a) -> m.append(fold.$(a)), empty);
-  }
+  <B> B foldRight(@Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, B initial);
 
-  <B> B foldRight(@Nonnull BiFunction<? super A, ? super B, ? extends B> fold, B initial);
-
-  <B> B foldLeft(@Nonnull BiFunction<? super B, ? super A, ? extends B> fold, B initial);
+  <B> B foldLeft(@Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, B initial);
 }

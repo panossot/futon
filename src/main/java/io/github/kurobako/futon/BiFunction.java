@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,26 +24,25 @@ import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
 public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
-  C $(A a, B b);
+  C $(A first, B second);
 
   @Override
-  default C $(final @Nonnull Pair<A, B> p) {
-    requireNonNull(p, "p");
-    return $(p.left, p.right);
+  default C $(final @Nonnull Pair<A, B> arguments) {
+    requireNonNull(arguments);
+    return $(arguments.first, arguments.second);
   }
 
   default @Nonnull BiFunction<B, A, C> flip() {
-    return (b, a) -> BiFunction.this.$(a, b);
+    return (b, a) -> this.$(a, b);
   }
 
-  default @Nonnull Function<A, Function<B, C>> curry() {
-    return a -> b -> BiFunction.this.$(a, b);
+  static @Nonnull <A, B, C> Function<A, Function<B, C>> curry(final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
+    requireNonNull(biFunction);
+    return a -> b -> biFunction.$(a, b);
   }
 
-  static @Nonnull <A, B, C> BiFunction<A, B, C> uncurry(final @Nonnull
-                                                        Function<? super A, ? extends Function<? super B, ? extends C>>
-                                                        f) {
-    requireNonNull(f, "f");
-    return (a, b) -> f.$(a).$(b);
+  static @Nonnull <A, B, C> BiFunction<A, B, C> uncurry(final @Nonnull Function<? super A, ? extends Function<? super B, ? extends C>> function) {
+    requireNonNull(function);
+    return (a, b) -> function.$(a).$(b);
   }
 }

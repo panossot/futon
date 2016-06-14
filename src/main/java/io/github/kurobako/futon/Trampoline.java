@@ -23,8 +23,8 @@ import javax.annotation.Nonnull;
 import static io.github.kurobako.futon.Either.left;
 import static io.github.kurobako.futon.Either.right;
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Optional.none;
-import static io.github.kurobako.futon.Optional.some;
+import static io.github.kurobako.futon.Maybe.just;
+import static io.github.kurobako.futon.Maybe.nothing;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Trampoline<A> {
@@ -47,51 +47,51 @@ public abstract class Trampoline<A> {
                                            final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
     requireNonNull(another, "another");
     requireNonNull(zip, "zip");
-    Either<Value<Trampoline<A>>, A> thisResume = this.resume();
-    Either<Value<Trampoline<B>>, B> thatResume = another.resume();
-    for (Either.Left<Value<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
+    Either<Lazy<Trampoline<A>>, A> thisResume = this.resume();
+    Either<Lazy<Trampoline<B>>, B> thatResume = another.resume();
+    for (Either.Left<Lazy<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
       //noinspection LoopStatementThatDoesntLoop
-      for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> thisLeft.left.$().zip(thatLeft.left.$(), zip));
+      for (Either.Left<Lazy<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
+        return suspend(() -> thisLeft.value().extract().zip(thatLeft.value().extract(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return suspend(() -> thisLeft.left.$().zip(done(thatRight.right), zip));
+      for (Either.Right<Lazy<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
+        return suspend(() -> thisLeft.value().extract().zip(done(thatRight.value()), zip));
       }
     }
-    for (Either.Right<Value<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
+    for (Either.Right<Lazy<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
       //noinspection LoopStatementThatDoesntLoop
-      for (Either.Left<Value<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> done(thisRight.right).zip(thatLeft.left.$(), zip));
+      for (Either.Left<Lazy<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
+        return suspend(() -> done(thisRight.value()).zip(thatLeft.value().extract(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (Either.Right<Value<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return done(zip.$(thisRight.right, thatRight.right));
+      for (Either.Right<Lazy<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
+        return done(zip.$(thisRight.value(), thatRight.value()));
       }
     }
     assert false;
     throw new RuntimeException("assertion failed");
   }
 
-  public abstract @Nonnull Either<Value<Trampoline<A>>, A> resume();
+  public abstract @Nonnull Either<Lazy<Trampoline<A>>, A> resume();
 
   public final A run() {
     Trampoline<A> current = this;
     while (true) {
-      final Either<Value<Trampoline<A>>, A> step = current.resume();
-      for (final Either.Left<Value<Trampoline<A>>, A> left : step.caseLeft()) {
-        current = left.left.$();
+      final Either<Lazy<Trampoline<A>>, A> step = current.resume();
+      for (final Either.Left<Lazy<Trampoline<A>>, A> left : step.caseLeft()) {
+        current = left.value().extract();
       }
       //noinspection LoopStatementThatDoesntLoop
-      for (final Either.Right<Value<Trampoline<A>>, A> right: step.caseRight()) {
-        return right.right;
+      for (final Either.Right<Lazy<Trampoline<A>>, A> right: step.caseRight()) {
+        return right.value();
       }
     }
   }
 
-  public abstract @Nonnull Optional<More<A>> caseMore();
+  public abstract @Nonnull Maybe<More<A>> caseMore();
 
-  public abstract @Nonnull Optional<Done<A>> caseDone();
+  public abstract @Nonnull Maybe<Done<A>> caseDone();
 
   abstract <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind);
 
@@ -104,12 +104,12 @@ public abstract class Trampoline<A> {
     return new Done<>(result);
   }
 
-  public static @Nonnull <A> Trampoline.More<A> suspend(final @Nonnull Value<Trampoline<A>> next) {
+  public static @Nonnull <A> Trampoline.More<A> suspend(final @Nonnull Lazy<Trampoline<A>> next) {
     requireNonNull(next, "next");
     return new More<>(next);
   }
 
-  public static @Nonnull <A> Trampoline.More<A> lift(final @Nonnull Value<A> value) {
+  public static @Nonnull <A> Trampoline.More<A> lift(final @Nonnull Lazy<A> value) {
     requireNonNull(value, "value");
     return suspend(value.map(Trampoline::done));
   }
@@ -122,18 +122,18 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
+    public @Nonnull Either<Lazy<Trampoline<A>>, A> resume() {
       return right(result);
     }
 
     @Override
-    public @Nonnull Optional.None<More<A>> caseMore() {
-      return none();
+    public @Nonnull Maybe.Nothing<More<A>> caseMore() {
+      return nothing();
     }
 
     @Override
-    public @Nonnull Optional.Some<Done<A>> caseDone() {
-      return some(this);
+    public @Nonnull Maybe.Just<Done<A>> caseDone() {
+      return just(this);
     }
 
     @Override
@@ -143,27 +143,27 @@ public abstract class Trampoline<A> {
   }
 
   public static final class More<A> extends AbstractTrampoline<A> {
-    public final @Nonnull Value<Trampoline<A>> next;
+    public final @Nonnull Lazy<Trampoline<A>> next;
 
-    More(final @Nonnull Value<Trampoline<A>> next) {
+    More(final @Nonnull Lazy<Trampoline<A>> next) {
       //noinspection ConstantConditions
       assert next != null;
       this.next = next;
     }
 
     @Override
-    public @Nonnull Either<Value<Trampoline<A>>, A> resume() {
+    public @Nonnull Either<Lazy<Trampoline<A>>, A> resume() {
       return left(next);
     }
 
     @Override
-    public @Nonnull Optional.Some<More<A>> caseMore() {
-      return some(this);
+    public @Nonnull Maybe.Just<More<A>> caseMore() {
+      return just(this);
     }
 
     @Override
-    public @Nonnull Optional.None<Done<A>> caseDone() {
-      return none();
+    public @Nonnull Maybe.Nothing<Done<A>> caseDone() {
+      return nothing();
     }
   }
 
@@ -206,22 +206,22 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Either.Left<Value<Trampoline<A>>, A> resume() {
+    public @Nonnull Either.Left<Lazy<Trampoline<A>>, A> resume() {
       return left(trampoline.resume().either(
        value -> value.map(trampoline -> trampoline.dispatch(
-        at -> at.resume().either(v -> v.$().bind(function), function::$),
+        at -> at.resume().either(v -> v.extract().bind(function), function::$),
         bind -> new Bind<>(bind.trampoline, o -> bind.function.$(o).bind(function)))),
       o -> () -> function.$(o)));
     }
 
     @Override
-    public @Nonnull Optional.None<Done<A>> caseDone() {
-      return none();
+    public @Nonnull Maybe.Nothing<Done<A>> caseDone() {
+      return nothing();
     }
 
     @Override
-    public @Nonnull Optional.Some<More<A>> caseMore() {
-      return some(suspend(resume().left));
+    public @Nonnull Maybe.Just<More<A>> caseMore() {
+      return just(suspend(resume().value()));
     }
 
     @Override

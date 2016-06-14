@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,305 +20,506 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.StringJoiner;
 
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Optional.none;
-import static io.github.kurobako.futon.Optional.some;
+import static io.github.kurobako.futon.Maybe.*;
+import static io.github.kurobako.futon.Pair.pair;
 import static java.util.Objects.requireNonNull;
 
-public abstract class List<A> implements Foldable<A>, Iterable<A> {
-  public abstract @Nonnull <B> List<B> bind(@Nonnull Function<? super A, List<B>> bind);
+public interface List<A> extends Foldable<A>, Iterable<A> {
 
-  public abstract @Nonnull <B> List<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list);
-
-  public abstract @Nonnull <B> List<B> map(@Nonnull Function<? super A, ? extends B> map);
-
-  public abstract @Nonnull <B, C> List<C> zip(@Nonnull List<B> list,
-                                              @Nonnull BiFunction<? super A, ? super B, ? extends C> zip);
-
-  public abstract @Nonnull List<A> filter(@Nonnull Predicate<A> p);
-
-  public @Nonnull List<A> append(final @Nonnull List<A> list) {
-    requireNonNull(list, "list");
-    return list.foldLeft(List::cons, this);
+  default @Nonnull Cons<A> cons(final A value) {
+    return new ConsList<>(this, value);
   }
 
-  public @Nonnull Cons<A> cons(final A value) {
-    return new Cons<>(value, this);
-  }
+  @Nonnull List<A> append(@Nonnull List<A> list);
 
-  public abstract @Nonnull List<A> reverse();
+  @Nonnull List<A> take(int position);
 
-  public abstract int length();
+  @Nonnull List<A> drop(int position);
 
-  public abstract @Nonnull Optional<Cons<A>> caseCons();
+  @Nonnull Pair<? extends List<A>, ? extends List<A>> splitAt(int position);
 
-  public abstract @Nonnull Optional<Nil> caseNil();
+  @Nonnull List<A> takeWhile(@Nonnull Predicate<? super A> predicate);
 
-  public static @Nonnull <A> List<A> join(final @Nonnull List<List<A>> list) {
-    requireNonNull(list, "value");
+  @Nonnull List<A> dropWhile(@Nonnull Predicate<? super A> predicate);
+
+  @Nonnull Pair<? extends List<A>, ? extends List<A>> span(@Nonnull Predicate<? super A> predicate);
+
+  @Nonnull List<A> reverse();
+
+  int lookup(A value);
+
+  int length();
+
+  @Nonnull <B> List<B> bind(@Nonnull Function<? super A, List<B>> function);
+
+  @Nonnull <B, C> List<C> zip(@Nonnull List<B> list, @Nonnull BiFunction<? super A, ? super B, ? extends C> function);
+
+  @Nonnull <B, C> Pair<? extends List<B>, ? extends List<C>> unzip(@Nonnull Function<? super A, Pair<? extends B, ? extends C>> function);
+
+  @Nonnull <B> List<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list);
+
+  @Nonnull <B> List<B> map(@Nonnull Function<? super A, ? extends B> function);
+
+  @Nonnull List<A> filter(@Nonnull Predicate<? super A> predicate);
+
+  @Nonnull <B> Cons<B> scanRight(@Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, B initial);
+
+  @Nonnull <B> Cons<B> scanLeft(@Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, B initial);
+
+  @Nonnull Maybe<Cons<A>> caseCons();
+
+  @Nonnull Maybe<Nil<A>> caseNil();
+
+  static @Nonnull <A> List<A> join(final @Nonnull List<? extends List<A>> list) {
+    requireNonNull(list);
     return list.bind(id());
   }
 
-  public static @Nonnull <A> Cons<A> list(final A value) {
-    return new Cons<>(value, nil());
+  @SuppressWarnings("unchecked")
+  static @Nonnull <A> Nil<A> nil() {
+    return (Nil<A>) Nil.INSTANCE;
   }
 
-  @SafeVarargs
-  public static @Nonnull <A> List<A> list(final A... values) {
+  static @Nonnull <A> Cons<A> list(final A value) {
+    return new ConsList<>(nil(), value);
+  }
+
+  static @Nonnull <A> List<A> list(final A... values) {
     List<A> result = nil();
-    for (int i = values.length - 1; i >= 0; i--) result = result.cons(values[i]);
+    for (int i = values.length-1; i >= 0; i--) {
+      result = result.cons(values[i]);
+    }
     return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public static @Nonnull <A> Nil<A> nil() {
-    return Nil.INSTANCE;
+  interface Cons<A> extends List<A> {
+    A head();
+
+    @Nonnull List<A> tail();
+
+    @Override
+    @Nonnull Cons<A> append(@Nonnull List<A> list);
+
+    @Override
+    @Nonnull Cons<A> reverse();
+
+    @Override
+    @Nonnull <B, C> Pair<? extends Cons<B>, ? extends Cons<C>> unzip(@Nonnull Function<? super A, Pair<? extends B, ? extends C>> function);
+
+    @Override
+    @Nonnull <B> Cons<B> map(@Nonnull Function<? super A, ? extends B> function);
+
+    @Override
+    @Nonnull Just<Cons<A>> caseCons();
+
+    @Override
+    @Nonnull Nothing<Nil<A>> caseNil();
   }
 
-  public static final class Cons<A> extends List<A> {
-    private static final int MAX_LENGTH = Integer.MAX_VALUE - 8;
+  interface Nil<A> extends List<A> {
+    Nil<Object> INSTANCE = new Nil<Object>() {
+      private final Just<Nil<Object>> JUST_NIL = just(this);
+      private final Pair<Nil<Object>, Nil<Object>> NILS = pair(this, this);
 
-    public final A head;
-    public final @Nonnull List<A> tail;
-
-    private final int length;
-
-    Cons(final A head, final @Nonnull List<A> tail) {
-      //noinspection ConstantConditions
-      assert tail != null;
-      assert tail.length() > 0;
-      this.head = head;
-      this.tail = tail;
-      this.length = tail.length() + 1;
-      if (this.length > MAX_LENGTH) throw new IllegalArgumentException("Can't have lists longer than " + MAX_LENGTH);
-    }
-
-    @Override
-    public @Nonnull <B> List<B> bind(final @Nonnull Function<? super A, List<B>> bind) {
-      requireNonNull(bind, "bind");
-      return foldRight((BiFunction<? super A, List<B>, List<B>>) (a, bs) -> bs.append(bind.$(a)), nil());
-    }
-
-    @Override
-    public @Nonnull <B> List<B> apply(final @Nonnull List<? extends Function<? super A, ? extends B>> list) {
-      requireNonNull(list, "list");
-      return foldRight((BiFunction<? super A, List<B>, List<B>>) (a, bs) -> bs.append(
-        list.foldRight((BiFunction<Function<? super A, ? extends B>, List<B>, List<B>>) (f, bs2) -> bs2.cons(f.$(a)),
-        nil())),
-      nil());
-    }
-
-    @Override
-    public @Nonnull <B> List<B> map(final @Nonnull Function<? super A, ? extends B> map) {
-      requireNonNull(map, "map");
-      return foldRight((BiFunction<A, List<B>, List<B>>) (a, bs) -> bs.cons(map.$(a)), nil());
-    }
-
-    @Override
-    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> another,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
-      requireNonNull(another, "another");
-      requireNonNull(zip, "zip");
-      List<C> result = nil();
-      final Iterator<A> ai = this.reverse().iterator();
-      final Iterator<B> bi = another.reverse().iterator();
-      while (bi.hasNext() && ai.hasNext()) {
-        result = result.cons(zip.$(ai.next(), bi.next()));
+      @Override
+      public @Nonnull Nil<Object> take(final int position) {
+        if (position < 0) throw new IllegalArgumentException();
+        return this;
       }
-      return result;
-    }
 
-    @Override
-    public @Nonnull List<A> filter(final @Nonnull Predicate<A> p) {
-      requireNonNull(p, "p");
-      return foldRight((BiFunction<A, List<A>, List<A>>) (a, as) -> p.$(a) ? as.cons(a) : as, nil());
-    }
-
-    @Override
-    public @Nonnull List<A> reverse() {
-      return foldLeft((BiFunction<List<A>, A, List<A>>) List::cons, nil());
-    }
-
-    @Override
-    public int length() {
-      return length;
-    }
-
-    @Override
-    public @Nonnull Optional.Some<Cons<A>> caseCons() {
-      return some(this);
-    }
-
-    @Override
-    public @Nonnull Optional.None<Nil> caseNil() {
-      return none();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      final A[] elements = (A[]) new Object[length];
-      B result = initial;
-      List<A> tail = this;
-      for (int i = elements.length - 1; i >= 0; i--) {
-        assert tail instanceof Cons;
-        Cons<A> cons = (Cons<A>) tail;
-        elements[i] = cons.head;
-        tail = cons.tail;
+      @Override
+      public @Nonnull  Nil<Object> drop(final int position) {
+        if (position < 0) throw new IllegalArgumentException();
+        return this;
       }
-      for (A element : elements) {
-        result = fold.$(element, result);
+
+      @Override
+      public @Nonnull Pair<? extends Nil<Object>, ? extends Nil<Object>> splitAt(final int position) {
+        if (position < 0) throw new IllegalArgumentException();
+        return NILS;
       }
-      return result;
-    }
 
-    @Override
-    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      B result = initial;
-      List<A> tail = this;
-      for (int i = 0; i < length; i++) {
-        assert tail instanceof Cons;
-        Cons<A> cons = (Cons<A>) tail;
-        result = fold.$(result, cons.head);
-        tail = cons.tail;
+      @Override
+      public @Nonnull Nil<Object> takeWhile(final @Nonnull Predicate<? super Object> predicate) {
+        requireNonNull(predicate);
+        return this;
       }
-      return result;
-    }
 
-    @Override
-    public Iterator<A> iterator() {
-      return new Iterator<A>() {
-        List<A> next = Cons.this;
-
-        @Override
-        public boolean hasNext() {
-          //noinspection LoopStatementThatDoesntLoop
-          for (Nil nil : next.caseNil()) return false;
-          return true;
-        }
-
-        @Override
-        public A next() {
-          //noinspection LoopStatementThatDoesntLoop
-          for (Cons<A> cons : next.caseCons()) {
-            A result = cons.head;
-            next = cons.tail;
-            return result;
-          }
-          throw new NoSuchElementException();
-        }
-      };
-    }
-
-    @Override
-    public int hashCode() {
-      return foldLeft((integer, a) -> integer + Objects.hashCode(a), 31);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (!(o instanceof List)) return false;
-      List that = (List) o;
-      if (this.length != that.length()) return false;
-      final Iterator<A> thisI = this.iterator();
-      final Iterator thatI = that.iterator();
-      while (thisI.hasNext() && thatI.hasNext()) {
-        if (!Objects.equals(thisI.next(), thatI.next())) return false;
+      @Override
+      public @Nonnull Nil<Object> dropWhile(final @Nonnull Predicate<? super Object> predicate) {
+        requireNonNull(predicate);
+        return this;
       }
-      return true;
-    }
 
-    @Override
-    public @Nonnull String toString() {
-      return foldLeft((sj, a) -> sj.add(String.valueOf(a)), new StringJoiner(", ", "[", "]")).toString();
-    }
+      @Override
+      public @Nonnull Pair<? extends Nil<Object>, ? extends Nil<Object>> span(final @Nonnull Predicate<? super Object> predicate) {
+        requireNonNull(predicate);
+        return NILS;
+      }
+
+      @Override
+      public @Nonnull Nil<Object> reverse() {
+        return this;
+      }
+
+      @Override
+      public int lookup(final Object value) {
+        return -1;
+      }
+
+      @Override
+      public int length() {
+        return 0;
+      }
+
+      @Override
+      public @Nonnull <B> Nil<B> bind(final @Nonnull Function<? super Object, List<B>> function) {
+        requireNonNull(function);
+        return nil();
+      }
+
+      @Override
+      public @Nonnull <B, C> Nil<C> zip(final @Nonnull List<B> list, final @Nonnull BiFunction<? super Object, ? super B, ? extends C> function) {
+        requireNonNull(list);
+        requireNonNull(function);
+        return nil();
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public @Nonnull <B, C> Pair<? extends Nil<B>, ? extends Nil<C>> unzip(final @Nonnull Function<? super Object, Pair<? extends B, ? extends C>> function) {
+        requireNonNull(function);
+        return (Pair<? extends Nil<B>, ? extends Nil<C>>) NILS;
+      }
+
+      @Override
+      public @Nonnull <B> Nil<B> apply(final @Nonnull List<? extends Function<? super Object, ? extends B>> list) {
+        requireNonNull(list);
+        return nil();
+      }
+
+      @Override
+      public @Nonnull <B> Nil<B> map(final @Nonnull Function<? super Object, ? extends B> function) {
+        requireNonNull(function);
+        return nil();
+      }
+
+      @Override
+      public @Nonnull Nil<Object> filter(final @Nonnull Predicate<? super Object> predicate) {
+        requireNonNull(predicate);
+        return this;
+      }
+
+      @Override
+      public @Nonnull Nothing<Cons<Object>> caseCons() {
+        return nothing();
+      }
+
+      @Override
+      public @Nonnull Just<Nil<Object>> caseNil() {
+        return JUST_NIL;
+      }
+
+      @Override
+      public @Nonnull List<Object> append(final @Nonnull List<Object> list) {
+        requireNonNull(list);
+        return list;
+      }
+
+      @Override
+      public @Nonnull <B> Cons<B> scanRight(final @Nonnull BiFunction<? super Object, ? super B, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return List.list(initial);
+      }
+
+      @Override
+      public @Nonnull <B> Cons<B> scanLeft(final @Nonnull BiFunction<? super B, ? super Object, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return List.list(initial);
+      }
+
+      @Override
+      public <B> B foldRight(final @Nonnull BiFunction<? super Object, ? super B, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return initial;
+      }
+
+      @Override
+      public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super Object, ? extends B> biFunction, final B initial) {
+        requireNonNull(biFunction);
+        return initial;
+      }
+
+      @Override
+      public @Nonnull Iterator<Object> iterator() {
+        return Collections.emptyIterator();
+      }
+
+      @Override
+      public @Nonnull String toString() {
+        return "Nil";
+      }
+    };
+
+    @Nonnull Nil<A> take(int position);
+
+    @Nonnull Nil<A> drop(int position);
+
+    @Nonnull Pair<? extends Nil<A>, ? extends Nil<A>> splitAt(int position);
+
+    @Nonnull Nil<A> takeWhile(@Nonnull Predicate<? super A> predicate);
+
+    @Nonnull Nil<A> dropWhile(@Nonnull Predicate<? super A> predicate);
+
+    @Nonnull Pair<? extends Nil<A>, ? extends Nil<A>> span(@Nonnull Predicate<? super A> predicate);
+
+    @Nonnull Nil<A> reverse();
+
+    int lookup(A value);
+
+    int length();
+
+    @Nonnull <B> Nil<B> bind(@Nonnull Function<? super A, List<B>> function);
+
+    @Nonnull <B, C> Nil<C> zip(@Nonnull List<B> list, @Nonnull BiFunction<? super A, ? super B, ? extends C> function);
+
+    @Nonnull <B, C> Pair<? extends Nil<B>, ? extends Nil<C>> unzip(@Nonnull Function<? super A, Pair<? extends B, ? extends C>> function);
+
+    @Nonnull <B> Nil<B> apply(@Nonnull List<? extends Function<? super A, ? extends B>> list);
+
+    @Nonnull <B> Nil<B> map(@Nonnull Function<? super A, ? extends B> function);
+
+    @Nonnull Nil<A> filter(@Nonnull Predicate<? super A> predicate);
+
+    @Nonnull Nothing<Cons<A>> caseCons();
+
+    @Nonnull Just<Nil<A>> caseNil();
+  }
+}
+
+final class ConsList<A> implements List.Cons<A> {
+  private static final int MAX_SIZE = Integer.MAX_VALUE - 8;
+
+  private final A head;
+  private final List<A> tail;
+  private final int length;
+
+  ConsList(List<A> tail, A head) {
+    assert tail != null;
+    this.head = head;
+    this.tail = tail;
+    this.length = tail.length() + 1;
+    if (length > MAX_SIZE) throw new IllegalArgumentException();
   }
 
-  @SuppressWarnings("unchecked")
-  public static final class Nil<A> extends List<A> {
-    private static final Nil INSTANCE = new Nil();
-    private static final Optional.Some<Nil> SOME_NIL = some(INSTANCE);
+  @Override
+  public A head() {
+    return head;
+  }
 
-    private Nil() {}
+  @Override
+  public @Nonnull List<A> tail() {
+    return tail;
+  }
 
-    @Override
-    public @Nonnull <B> List<B> bind(final @Nonnull Function<? super A, List<B>> bind) {
-      requireNonNull(bind, "bind");
-      return (List<B>) this;
+  @Override
+  public @Nonnull Cons<A> append(final @Nonnull List<A> list) {
+    requireNonNull(list);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull List<A> take(final int position) {
+    if (position < 0) throw new IllegalArgumentException();
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull List<A> drop(final int position) {
+    if (position < 0) throw new IllegalArgumentException();
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull Pair<? extends List<A>, ? extends List<A>> splitAt(final int position) {
+    if (position < 0) throw new IllegalArgumentException();
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull List<A> takeWhile(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull List<A> dropWhile(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull Pair<? extends List<A>, ? extends List<A>> span(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull Cons<A> reverse() {
+    List<A> result = foldLeft((BiFunction<List<A>, A, List<A>>) List::cons, List.nil());
+    assert result instanceof Cons;
+    return (Cons<A>) result;
+  }
+
+  @Override
+  public int lookup(final A value) {
+    return 0; // TODO
+  }
+
+  @Override
+  public int length() {
+    return length;
+  }
+
+  @Override
+  public @Nonnull <B> List<B> bind(final @Nonnull Function<? super A, List<B>> function) {
+    requireNonNull(function);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> list, final @Nonnull BiFunction<? super A, ? super B, ? extends C> function) {
+    requireNonNull(list);
+    requireNonNull(function);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull <B, C> Pair<? extends Cons<B>, ? extends Cons<C>> unzip(final @Nonnull Function<? super A, Pair<? extends B, ? extends C>> function) {
+    requireNonNull(function);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull <B> List<B> apply(final @Nonnull List<? extends Function<? super A, ? extends B>> list) {
+    requireNonNull(list);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull <B> Cons<B> map(final @Nonnull Function<? super A, ? extends B> function) {
+    requireNonNull(function);
+    return null; // TODO
+  }
+
+  @Override
+  public @Nonnull List<A> filter(final @Nonnull Predicate<? super A> predicate) {
+    requireNonNull(predicate);
+    return foldRight((BiFunction<A, List<A>, List<A>>) (a, as) -> predicate.$(a) ? as.cons(a) : as, List.nil());
+  }
+
+  @Override
+  public @Nonnull <B> Cons<B> scanRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, final B initial) {
+    requireNonNull(biFunction);
+    return reverse().scanLeft(biFunction.flip(), initial);
+  }
+
+  @Override
+  public @Nonnull <B> Cons<B> scanLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, final B initial) {
+    requireNonNull(biFunction);
+    Cons<B> result = List.list(initial);
+    B current = initial;
+    List<A> tail = this;
+    for (int i = 0; i < length; i++) {
+      assert tail instanceof Cons;
+      Cons<A> cons = (Cons<A>) tail;
+      current = biFunction.$(current, cons.head());
+      result = result.cons(current);
+      tail = cons.tail();
     }
+    return result;
+  }
 
-    @Override
-    public @Nonnull <B> List<B> apply(final @Nonnull List<? extends Function<? super A, ? extends B>> list) {
-      requireNonNull(list, "list");
-      return (List<B>) this;
-    }
+  @Override
+  public @Nonnull Just<Cons<A>> caseCons() {
+    return just(this);
+  }
 
-    @Override
-    public @Nonnull <B> List<B> map(final @Nonnull Function<? super A, ? extends B> map) {
-      requireNonNull(map, "map");
-      return (List<B>) this;
-    }
+  @Override
+  public @Nonnull Nothing<Nil<A>> caseNil() {
+    return nothing();
+  }
 
-    @Override
-    public @Nonnull <B, C> List<C> zip(final @Nonnull List<B> another,
-                                       final @Nonnull BiFunction<? super A, ? super B, ? extends C> zip) {
-      requireNonNull(another, "another");
-      requireNonNull(zip, "zip");
-      return (List<C>) this;
-    }
+  @Override
+  public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, final B initial) {
+    requireNonNull(biFunction);
+    return reverse().foldLeft(biFunction.flip(), initial);
+  }
 
-    @Override
-    public @Nonnull List<A> filter(final @Nonnull Predicate<A> p) {
-      requireNonNull(p, "p");
-      return this;
+  @Override
+  public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, final B initial) {
+    requireNonNull(biFunction);
+    B result = initial;
+    List<A> tail = this;
+    for (int i = 0; i < length; i++) {
+      assert tail instanceof Cons;
+      Cons<A> cons = (Cons<A>) tail;
+      result = biFunction.$(result, cons.head());
+      tail = cons.tail();
     }
+    return initial;
+  }
 
-    @Override
-    public @Nonnull List<A> reverse() {
-      return this;
-    }
+  @Override
+  public @Nonnull Iterator<A> iterator() {
+    return new Iterator<A>() {
+      List<A> next = ConsList.this;
 
-    @Override
-    public int length() {
-      return 0;
-    }
+      @Override
+      public boolean hasNext() {
+        return next instanceof Cons;
+      }
 
-    @Override
-    public @Nonnull Optional.None<Cons<A>> caseCons() {
-      return none();
-    }
+      @Override
+      public A next() {
+        if (next instanceof Cons) {
+          Cons<A> cons = (Cons<A>) next;
+          next = cons.tail();
+          return cons.head();
+        }
+        throw new NullPointerException();
+      }
+    };
+  }
 
-    @Override
-    public @Nonnull Optional.Some<Nil> caseNil() {
-      return SOME_NIL;
-    }
+  @Override
+  public int hashCode() {
+    return foldLeft((integer, a) -> integer + Objects.hashCode(a), 31);
+  }
 
-    @Override
-    public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return initial;
+  @Override
+  public boolean equals(final Object obj) {
+    if (!(obj instanceof Cons)) return false;
+    final Cons that = (Cons)obj;
+    final Iterator thisI = this.iterator();
+    final Iterator thatI = that.iterator();
+    if (this.length != that.length()) return false;
+    for (int i = 0; i < length; i++) {
+      assert thisI.hasNext();
+      assert thatI.hasNext();
+      if (!Objects.equals(thisI.next(), thatI.next())) return false;
     }
-
-    @Override
-    public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> fold, final B initial) {
-      requireNonNull(fold, "fold");
-      return initial;
-    }
-
-    @Override
-    public Iterator<A> iterator() {
-      return Collections.emptyIterator();
-    }
+    return true;
   }
 
   @Override
   public @Nonnull String toString() {
-    return "[]";
+    return foldLeft((sj, a) -> sj.add(String.valueOf(a)), new StringJoiner(", ", "[", "]")).toString();
   }
 }
-
-

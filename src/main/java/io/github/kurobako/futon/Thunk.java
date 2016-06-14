@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fedor Gavrilov
+ * Copyright (C) 2016 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,23 +22,23 @@ import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
-public final class Thunk<A> implements Value<A> {
-  private volatile Value<A> computation;
+public final class Thunk<A> implements Lazy<A> {
+  private volatile Lazy<A> computation;
   private A result;
 
-  public Thunk(final @Nonnull Value<A> computation) {
-    requireNonNull(computation, "computation");
+  public Thunk(final @Nonnull Lazy<A> computation) {
+    requireNonNull(computation);
     this.computation = computation;
   }
 
   @Override
-  public A $() {
+  public A extract() {
     boolean done = (computation == null);
     if (!done) {
       synchronized (this) {
         done = (computation == null);
         if (!done) {
-          result = computation.$();
+          result = computation.extract();
           computation = null;
         }
       }
