@@ -23,8 +23,8 @@ import javax.annotation.Nonnull;
 import static io.github.kurobako.futon.Either.left;
 import static io.github.kurobako.futon.Either.right;
 import static io.github.kurobako.futon.Function.id;
-import static io.github.kurobako.futon.Maybe.just;
-import static io.github.kurobako.futon.Maybe.nothing;
+import static io.github.kurobako.futon.Option.some;
+import static io.github.kurobako.futon.Option.none;
 import static java.util.Objects.requireNonNull;
 
 public abstract class Trampoline<A> {
@@ -52,21 +52,21 @@ public abstract class Trampoline<A> {
     for (Either.Left<Lazy<Trampoline<A>>, A> thisLeft: thisResume.caseLeft()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Lazy<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> thisLeft.value().extract().zip(thatLeft.value().extract(), zip));
+        return suspend(() -> thisLeft.left.extract().zip(thatLeft.left.extract(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Lazy<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return suspend(() -> thisLeft.value().extract().zip(done(thatRight.value()), zip));
+        return suspend(() -> thisLeft.left.extract().zip(done(thatRight.right), zip));
       }
     }
     for (Either.Right<Lazy<Trampoline<A>>, A> thisRight : thisResume.caseRight()) {
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Left<Lazy<Trampoline<B>>, B> thatLeft: thatResume.caseLeft()) {
-        return suspend(() -> done(thisRight.value()).zip(thatLeft.value().extract(), zip));
+        return suspend(() -> done(thisRight.right).zip(thatLeft.left.extract(), zip));
       }
       //noinspection LoopStatementThatDoesntLoop
       for (Either.Right<Lazy<Trampoline<B>>, B> thatRight : thatResume.caseRight()) {
-        return done(zip.$(thisRight.value(), thatRight.value()));
+        return done(zip.$(thisRight.right, thatRight.right));
       }
     }
     assert false;
@@ -80,18 +80,18 @@ public abstract class Trampoline<A> {
     while (true) {
       final Either<Lazy<Trampoline<A>>, A> step = current.resume();
       for (final Either.Left<Lazy<Trampoline<A>>, A> left : step.caseLeft()) {
-        current = left.value().extract();
+        current = left.left.extract();
       }
       //noinspection LoopStatementThatDoesntLoop
       for (final Either.Right<Lazy<Trampoline<A>>, A> right: step.caseRight()) {
-        return right.value();
+        return right.right;
       }
     }
   }
 
-  public abstract @Nonnull Maybe<More<A>> caseMore();
+  public abstract @Nonnull Option<More<A>> caseMore();
 
-  public abstract @Nonnull Maybe<Done<A>> caseDone();
+  public abstract @Nonnull Option<Done<A>> caseDone();
 
   abstract <R> R dispatch(@Nonnull Function<AbstractTrampoline<A>, R> ifNormal, @Nonnull Function<Bind<A>, R> ifBind);
 
@@ -127,13 +127,13 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Maybe.Nothing<More<A>> caseMore() {
-      return nothing();
+    public @Nonnull Option.None<More<A>> caseMore() {
+      return none();
     }
 
     @Override
-    public @Nonnull Maybe.Just<Done<A>> caseDone() {
-      return just(this);
+    public @Nonnull Option.Some<Done<A>> caseDone() {
+      return some(this);
     }
 
     @Override
@@ -157,13 +157,13 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Maybe.Just<More<A>> caseMore() {
-      return just(this);
+    public @Nonnull Option.Some<More<A>> caseMore() {
+      return some(this);
     }
 
     @Override
-    public @Nonnull Maybe.Nothing<Done<A>> caseDone() {
-      return nothing();
+    public @Nonnull Option.None<Done<A>> caseDone() {
+      return none();
     }
   }
 
@@ -215,13 +215,13 @@ public abstract class Trampoline<A> {
     }
 
     @Override
-    public @Nonnull Maybe.Nothing<Done<A>> caseDone() {
-      return nothing();
+    public @Nonnull Option.None<Done<A>> caseDone() {
+      return none();
     }
 
     @Override
-    public @Nonnull Maybe.Just<More<A>> caseMore() {
-      return just(suspend(resume().value()));
+    public @Nonnull Option.Some<More<A>> caseMore() {
+      return some(suspend(resume().left));
     }
 
     @Override

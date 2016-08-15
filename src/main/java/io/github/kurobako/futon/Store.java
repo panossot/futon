@@ -38,20 +38,24 @@ public interface Store<A, I> {
 
   default A peeks(final @Nonnull Function<? super I, ? extends I> function) {
     requireNonNull(function);
-    return seeks(function).extract();
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return fi.first.$(function.$(fi.second));
   }
 
   default @Nonnull Store<A, I> seek(final I index) {
-    return store(peek(), index);
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return store(fi.first, index);
   }
 
   default @Nonnull Store<A, I> seeks(final @Nonnull Function<? super I, ? extends I> function) {
     requireNonNull(function);
-    return store(peek(), function.$(pos()));
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return store(fi.first, function.$(fi.second));
   }
 
   default A extract() {
-    return peek().$(pos());
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return fi.first.$(fi.second);
   }
 
   default @Nonnull Store<Store<A, I>, I> duplicate() {
@@ -60,23 +64,101 @@ public interface Store<A, I> {
 
   default @Nonnull <B> Store<B, I> extend(final @Nonnull Function<? super Store<A, I>, ? extends B> function) {
     requireNonNull(function);
-    return store(index -> function.$(Store.this.seek(index)), pos());
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return store(index -> function.$(seek(index)), pos());
   }
 
   default @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> function) {
     requireNonNull(function);
-    return store(peek().compose(function), pos());
+    final Pair<Function<? super I, ? extends A>, I> fi = run();
+    return store(fi.first.compose(function), fi.second);
   }
 
   static @Nonnull <A, I> Store<A, I> store(final @Nonnull Function<? super I, ? extends A> function, final I index) {
     requireNonNull(function);
+    final Pair<Function<? super I, ? extends A>, I> run = pair(function, index);
+    return () -> run;
+  }
+
+  static @Nonnull <A, I> Store<A, I> lazy(final @Nonnull Store<A, I> store) {
+    requireNonNull(store);
     return new Store<A, I>() {
-      private final Pair<Function<? super I, ? extends A>, I> run = pair(function, index);
+      final Thunk<Pair<Function<? super I, ? extends A>, I>> thunk = new Thunk<>(store::run);
 
       @Override
       public @Nonnull Pair<Function<? super I, ? extends A>, I> run() {
-        return run;
+        return thunk.extract();
+      }
+
+      @Override
+      public @Nonnull Store<A, I> seek(final I index) {
+        return lazy(() -> pair(thunk.extract().first, index));
+      }
+
+      @Override
+      public @Nonnull Store<A, I> seeks(final @Nonnull Function<? super I, ? extends I> function) {
+        return lazy(() -> {
+          final Pair<Function<? super I, ? extends A>, I> fi = thunk.extract();
+          return pair(fi.first, function.$(fi.second));
+        });
+      }
+
+      @Override
+      public @Nonnull <B> Store<B, I> extend(final @Nonnull Function<? super Store<A, I>, ? extends B> function) {
+        requireNonNull(function);
+        return lazy(() -> pair(index -> function.$(seek(index)), pos()));
+      }
+
+      @Override
+      public @Nonnull <B> Store<B, I> map(final @Nonnull Function<? super A, ? extends B> function) {
+        requireNonNull(function);
+        return lazy(() -> {
+          final Pair<Function<? super I, ? extends A>, I> fi = thunk.extract();
+          return pair(fi.first.compose(function), fi.second);
+        });
       }
     };
+  }
+
+  @FunctionalInterface
+  interface CoKleisli<A, B, I> {
+    B run(@Nonnull Store<A, I> store);
+
+    default @Nonnull <C> CoKleisli<A, C, I> compose(final @Nonnull CoKleisli<B, ? extends C, I> coKleisli) {
+      requireNonNull(coKleisli);
+      return a -> coKleisli.run(a.extend(this::run));
+    }
+
+    default @Nonnull <C> CoKleisli<A, C, I> compose(final @Nonnull Function<? super B, ? extends C> function) {
+      requireNonNull(function);
+      return a -> function.$(run(a));
+    }
+
+    default @Nonnull <C> CoKleisli<Pair<A, C>, Pair<B, C>, I> first() {
+      return ac -> pair(ac.map(p -> p.first), ac.map(p -> p.second)).biMap(this::run, Store::extract);
+    }
+
+    default @Nonnull <C> CoKleisli<Pair<C, A>, Pair<C, B>, I> second() {
+      return ca -> pair(ca.map(p -> p.first), ca.map(p -> p.second)).biMap(Store::extract, this::run);
+    }
+
+    default @Nonnull <C, D> CoKleisli<Pair<A, C>, Pair<B, D>, I> product(final @Nonnull CoKleisli<C, ? extends D, I> coKleisli) {
+      requireNonNull(coKleisli);
+      return ac -> pair(ac.map(p -> p.first), ac.map(p -> p.second)).biMap(this::run, coKleisli::run);
+    }
+
+    default @Nonnull <C> CoKleisli<A, Pair<B, C>, I> fanOut(final @Nonnull CoKleisli<A, ? extends C, I> coKleisli) {
+      requireNonNull(coKleisli);
+      return a -> pair(run(a), coKleisli.run(a));
+    }
+
+    static @Nonnull <A, B, I> CoKleisli<A, B, I> lift(final @Nonnull Function<? super A, ? extends B> function) {
+      requireNonNull(function);
+      return a -> function.$(a.extract());
+    }
+
+    static @Nonnull <A, I> CoKleisli<A, A, I> id() {
+      return Store::extract;
+    }
   }
 }

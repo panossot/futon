@@ -27,9 +27,9 @@ public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
   C $(A first, B second);
 
   @Override
-  default C $(final @Nonnull Pair<A, B> arguments) {
-    requireNonNull(arguments);
-    return $(arguments.first, arguments.second);
+  default C $(final @Nonnull Pair<A, B> args) {
+    requireNonNull(args);
+    return $(args.first, args.second);
   }
 
   default @Nonnull BiFunction<B, A, C> flip() {
@@ -37,12 +37,10 @@ public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
   }
 
   static @Nonnull <A, B, C> Function<A, Function<B, C>> curry(final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
-    requireNonNull(biFunction);
     return a -> b -> biFunction.$(a, b);
   }
 
   static @Nonnull <A, B, C> BiFunction<A, B, C> uncurry(final @Nonnull Function<? super A, ? extends Function<? super B, ? extends C>> function) {
-    requireNonNull(function);
     return (a, b) -> function.$(a).$(b);
   }
 }

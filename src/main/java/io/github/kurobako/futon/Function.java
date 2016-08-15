@@ -19,17 +19,17 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
-import static java.util.Objects.requireNonNull;
 
 import static io.github.kurobako.futon.Pair.pair;
+import static java.util.Objects.requireNonNull;
 
 @FunctionalInterface
 public interface Function<A, B> {
-  B $(A argument);
+  B $(A arg);
 
   default @Nonnull <C> Function<A, C> compose(final @Nonnull Function<? super B, ? extends C> function) {
     requireNonNull(function);
-    return a -> function.$(this.$(a));
+    return a -> function.$($(a));
   }
 
   default @Nonnull <C> Function<Either<A, C>, Either<B, C>> left() {
@@ -73,6 +73,10 @@ public interface Function<A, B> {
   }
 
   static @Nonnull <A, B> Function<A, B> constant(final B value) {
-    return ignoredArgument -> value;
+    return ignored -> value;
+  }
+
+  static @Nonnull <A, B> Function<Pair<Function<A, B>, A>, B> apply() {
+    return fa -> fa.first.$(fa.second);
   }
 }

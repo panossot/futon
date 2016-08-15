@@ -23,23 +23,23 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public final class Pair<L, R> {
-  public final L first;
-  public final R second;
+public class Pair<A, B> {
+  public final A first;
+  public final B second;
 
-  private Pair(final L first, final R second) {
+  private Pair(final A first, final B second) {
     this.first = first;
     this.second = second;
   }
 
-  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super L, ? extends X> first, final @Nonnull Function<? super R, ? extends Y> second) {
-    requireNonNull(first);
-    requireNonNull(second);
-    return pair(first.$(this.first), second.$(this.second));
+  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super A, ? extends X> firstFn, final @Nonnull Function<? super B, ? extends Y> secondFn) {
+    requireNonNull(firstFn);
+    requireNonNull(secondFn);
+    return pair(firstFn.$(first), secondFn.$(second));
   }
 
-  public @Nonnull Pair<R, L> swap() {
-    return pair(this.second, this.first);
+  public @Nonnull Pair<B, A> swap() {
+    return pair(second, first);
   }
 
   @Override
@@ -61,7 +61,7 @@ public final class Pair<L, R> {
     return String.format("(%s, %s)", this.first, this.second);
   }
 
-  public static @Nonnull <L, R> Pair<L, R> pair(final L first, final R second) {
+  public static <A, B> Pair<A, B> pair(final A first, final B second) {
     return new Pair<>(first, second);
   }
 }
