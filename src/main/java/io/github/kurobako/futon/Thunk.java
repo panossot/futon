@@ -20,14 +20,15 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Pair.pair;
+import static io.github.kurobako.futon.Util.nonNull;
 
-public final class Thunk<A> implements Lazy<A> {
-  private volatile Lazy<A> computation;
+public final class Thunk<A> implements Value<A> {
+  private volatile Value<A> computation;
   private A result;
 
-  public Thunk(final @Nonnull Lazy<A> computation) {
-    requireNonNull(computation);
+  public Thunk(final @Nonnull Value<A> computation) {
+    nonNull(computation);
     this.computation = computation;
   }
 
@@ -44,6 +45,48 @@ public final class Thunk<A> implements Lazy<A> {
       }
     }
     return result;
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> extend(final @Nonnull Function<? super Value<A>, B> function) {
+    nonNull(function);
+    return new Thunk<>(() -> function.$(this));
+  }
+
+  @Override
+  public @Nonnull Thunk<Thunk<A>> duplicate() {
+    return new Thunk<>(() -> this);
+  }
+
+  @Override
+  public @Nonnull <B, C> Thunk<C> zip(final @Nonnull Value<B> value, final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
+    nonNull(value);
+    nonNull(biFunction);
+    return new Thunk<>(() -> biFunction.$(extract(), value.extract()));
+  }
+
+  @Override
+  public @Nonnull <B, C> Pair<Thunk<B>, Thunk<C>> unzip(final @Nonnull Function<? super A, Pair<B, C>> function) {
+    nonNull(function);
+    return pair(new Thunk<>(() -> function.$(extract()).first), new Thunk<>(() -> function.$(extract()).second));
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> bind(final @Nonnull Function<? super A, ? extends Value<B>> function) {
+    nonNull(function);
+    return new Thunk<>(() -> function.$(extract()).extract());
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> apply(final @Nonnull Value<? extends Function<? super A, ? extends B>> value) {
+    nonNull(value);
+    return new Thunk<>(() -> value.extract().$(extract()));
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> map(final @Nonnull Function<? super A, ? extends B> function) {
+    nonNull(function);
+    return new Thunk<>(() -> function.$(extract()));
   }
 
   @Override

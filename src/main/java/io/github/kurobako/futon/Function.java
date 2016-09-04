@@ -21,14 +21,18 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnull;
 
 import static io.github.kurobako.futon.Pair.pair;
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.nonNull;
 
-@FunctionalInterface
 public interface Function<A, B> {
   B $(A arg);
 
-  default @Nonnull <C> Function<A, C> compose(final @Nonnull Function<? super B, ? extends C> function) {
-    requireNonNull(function);
+  default @Nonnull <Z> Function<Z, B> precompose(final @Nonnull Function<? super Z, ? extends A> function) {
+    nonNull(function);
+    return z -> $(function.$(z));
+  }
+
+  default @Nonnull <C> Function<A, C> postcompose(final @Nonnull Function<? super B, ? extends C> function) {
+    nonNull(function);
     return a -> function.$($(a));
   }
 
@@ -49,22 +53,22 @@ public interface Function<A, B> {
   }
 
   default @Nonnull <C, D> Function<Either<A, C>, Either<B, D>> sum(final @Nonnull Function<? super C, ? extends D> function) {
-    requireNonNull(function);
+    nonNull(function);
     return ac -> ac.biMap(this::$, function::$);
   }
 
   default @Nonnull <C, D> Function<Pair<A, C>, Pair<B, D>> product(final @Nonnull Function<? super C, ? extends D> function) {
-    requireNonNull(function);
+    nonNull(function);
     return ac -> ac.biMap(this::$, function::$);
   }
 
   default @Nonnull <C> Function<Either<A, C>, B> fanIn(final @Nonnull Function<? super C, ? extends B> function) {
-    requireNonNull(function);
+    nonNull(function);
     return ac -> ac.either(this::$, function::$);
   }
 
   default @Nonnull <C> Function<A, Pair<B, C>> fanOut(final @Nonnull Function<? super A, ? extends C> function) {
-    requireNonNull(function);
+    nonNull(function);
     return a -> pair(this.$(a), function.$(a));
   }
 
@@ -73,7 +77,7 @@ public interface Function<A, B> {
   }
 
   static @Nonnull <A, B> Function<A, B> constant(final B value) {
-    return ignored -> value;
+    return ignoredArg -> value;
   }
 
   static @Nonnull <A, B> Function<Pair<Function<A, B>, A>, B> apply() {

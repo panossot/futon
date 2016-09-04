@@ -19,9 +19,10 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.equal;
+import static io.github.kurobako.futon.Util.hash;
+import static io.github.kurobako.futon.Util.nonNull;
 
 public class Pair<A, B> {
   public final A first;
@@ -32,10 +33,10 @@ public class Pair<A, B> {
     this.second = second;
   }
 
-  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super A, ? extends X> firstFn, final @Nonnull Function<? super B, ? extends Y> secondFn) {
-    requireNonNull(firstFn);
-    requireNonNull(secondFn);
-    return pair(firstFn.$(first), secondFn.$(second));
+  public @Nonnull <X, Y> Pair<X, Y> biMap(final @Nonnull Function<? super A, ? extends X> firstFunction, final @Nonnull Function<? super B, ? extends Y> secondFunction) {
+    nonNull(firstFunction);
+    nonNull(secondFunction);
+    return pair(firstFunction.$(first), secondFunction.$(second));
   }
 
   public @Nonnull Pair<B, A> swap() {
@@ -44,8 +45,8 @@ public class Pair<A, B> {
 
   @Override
   public int hashCode() {
-    final int l = Objects.hashCode(this.first);
-    final int r = Objects.hashCode(this.second);
+    final int l = hash(first);
+    final int r = hash(second);
     return l ^ (((r & 0xFFFF) << 16) | (r >> 16));
   }
 
@@ -53,12 +54,12 @@ public class Pair<A, B> {
   public boolean equals(final Object o) {
     if (!(o instanceof Pair)) return false;
     final Pair that = (Pair) o;
-    return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
+    return equal(first, that.first) && equal(second, that.second);
   }
 
   @Override
   public @Nonnull String toString() {
-    return String.format("(%s, %s)", this.first, this.second);
+    return String.format("(%s, %s)", first, second);
   }
 
   public static <A, B> Pair<A, B> pair(final A first, final B second) {

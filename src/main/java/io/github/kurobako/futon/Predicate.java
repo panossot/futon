@@ -20,28 +20,27 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.nonNull;
 
-@FunctionalInterface
 public interface Predicate<A> extends Function<A, Boolean> {
 
   default @Nonnull Predicate<A> and(final @Nonnull Predicate<? super A> predicate) {
-    requireNonNull(predicate);
+    nonNull(predicate);
     return a -> this.$(a) && predicate.$(a);
   }
 
   default @Nonnull Predicate<A> or(final @Nonnull Predicate<? super A> predicate) {
-    requireNonNull(predicate);
+    nonNull(predicate);
     return a -> this.$(a) || predicate.$(a);
   }
 
   default @Nonnull Predicate<A> xor(final @Nonnull Predicate<? super A> predicate) {
-    requireNonNull(predicate);
+    nonNull(predicate);
     return a -> this.$(a) ^ predicate.$(a);
   }
 
   static @Nonnull <A> Predicate<A> not(final @Nonnull Predicate<? super A> predicate) {
-    requireNonNull(predicate);
+    nonNull(predicate);
     return a -> !predicate.$(a);
   }
 

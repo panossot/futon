@@ -20,23 +20,24 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.nonNull;
 
-@FunctionalInterface
 public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
   C $(A first, B second);
 
   @Override
   default C $(final @Nonnull Pair<A, B> args) {
-    requireNonNull(args);
+    nonNull(args);
     return $(args.first, args.second);
   }
 
-  default @Nonnull BiFunction<B, A, C> flip() {
-    return (b, a) -> this.$(a, b);
+  static @Nonnull <A, B, C> BiFunction<B, A, C> flip(final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
+    nonNull(biFunction);
+    return (b, a) -> biFunction.$(a, b);
   }
 
   static @Nonnull <A, B, C> Function<A, Function<B, C>> curry(final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
+    nonNull(biFunction);
     return a -> b -> biFunction.$(a, b);
   }
 

@@ -20,120 +20,79 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static io.github.kurobako.futon.Function.id;
 import static io.github.kurobako.futon.Pair.pair;
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.nonNull;
+import static io.github.kurobako.futon.Function.id;
 
-@FunctionalInterface
-public interface State<A, S> {
-  @Nonnull Pair<A, S> run(S state);
+public interface State<S, A> {
+  @Nonnull Pair<S, A> run(S initial);
 
-  default @Nonnull <B> State<B, S> bind(final @Nonnull Function<? super A, ? extends State<B, S>> function) {
-    requireNonNull(function);
+  default S exec(final S initial) {
+    return run(initial).first;
+  }
+
+  default A eval(final S initial) {
+    return run(initial).second;
+  }
+
+  default @Nonnull <B> State<S, B> bind(final @Nonnull Function<? super A, ? extends State<S, B>> function) {
+    nonNull(function);
     return s -> {
-      final Pair<A, S> as = State.this.run(s);
-      return function.$(as.first).run(as.second);
+      final Pair<S, A> sa = State.this.run(s);
+      return function.$(sa.second).run(sa.first);
     };
   }
 
-  default @Nonnull <B> State<B, S> apply(final @Nonnull State<? extends Function<? super A, ? extends B>, S> state) {
-    requireNonNull(state);
+  default @Nonnull <B> State<S, B> apply(final @Nonnull State<S, ? extends Function<? super A, ? extends B>> state) {
+    nonNull(state);
     return bind(a -> state.bind(f -> unit(f.$(a))));
   }
 
-  default @Nonnull <B> State<B, S> map(final @Nonnull Function<? super A, ? extends B> function) {
-    requireNonNull(function);
-    return bind(a -> unit(function.$(a)));
+  default @Nonnull <B> State<S, B> map(final @Nonnull Function<? super A, ? extends B> function) {
+    nonNull(function);
+    return s -> {
+      final Pair<S, A> sa = run(s);
+      return pair(sa.first, function.$(sa.second));
+    };
   }
 
-  static @Nonnull <A, S> State<A, S> join(final @Nonnull State<? extends State<A, S>, S> state) {
-    requireNonNull(state);
-    return state.bind(id());
-  }
-
-  static @Nonnull <A, S> State<A, S> unit(final A value) {
-    return s -> pair(value, s);
+  default @Nonnull State<S, A> with(final @Nonnull Function<? super S, ? extends S> function) {
+    nonNull(function);
+    return s -> {
+      final Pair<S, A> sa = run(s);
+      return pair(function.$(sa.first), sa.second);
+    };
   }
 
   static @Nonnull <S> State<S, S> get() {
     return s -> pair(s, s);
   }
 
-  static @Nonnull <A, S> State<A, S> state(final @Nonnull Function<? super S, ? extends A> function) {
-    requireNonNull(function);
-    return s -> pair(function.$(s), s);
+  static @Nonnull <S> State<S, Unit> put(final S s) {
+    final Pair<S, Unit> su = pair(s, Unit.INSTANCE);
+    return ignoredArg -> su;
   }
 
-  static @Nonnull <S> State<Unit, S> put(final S state) {
-    return modify(ignoredArg -> state);
+  static @Nonnull <S> State<S, Unit> modify(final @Nonnull Function<? super S, ? extends S> function) {
+    nonNull(function);
+    return s -> pair(function.$(s), Unit.INSTANCE);
   }
 
-  static @Nonnull <S> State<Unit, S> modify(final Function<? super S, ? extends S> function) {
-    requireNonNull(function);
-    return s -> pair(Unit.INSTANCE, function.$(s));
+  static @Nonnull <S, T> State<S, T> gets(final @Nonnull Function<? super S, ? extends T> function) {
+    nonNull(function);
+    return s -> pair(s, function.$(s));
   }
 
-  @FunctionalInterface
-  interface Kleisli<A, B, S> {
-    @Nonnull State<B, S> run(A a);
+  static @Nonnull <S extends InverseSemigroup<S>> State<S, S> delta(final @Nonnull S current) {
+    nonNull(current);
+    return s -> pair(current.inverse().append(s), current);
+  }
 
-    default @Nonnull <C> Kleisli<A, C, S> compose(final @Nonnull Kleisli<? super B, C, S> kleisli) {
-      requireNonNull(kleisli);
-      return a -> run(a).bind(kleisli::run);
-    }
+  static @Nonnull <S, A> State<S, A> join(final @Nonnull State<S, ? extends State<S, A>> state) {
+    return nonNull(state).bind(id());
+  }
 
-    default @Nonnull <C> Kleisli<A, C, S> compose(final @Nonnull Function<? super B, ? extends C> function) {
-      requireNonNull(function);
-      return a -> run(a).map(function);
-    }
-
-    default @Nonnull <C> Kleisli<Either<A, C>, Either<B, C>, S> left() {
-      return ac -> ac.either(a -> run(a).map(Either::left), c -> unit(Either.right(c)));
-    }
-
-    default @Nonnull <C> Kleisli<Either<C, A>, Either<C, B>, S> right() {
-      return ca -> ca.either(c -> unit(Either.left(c)), a -> run(a).map(Either::right));
-    }
-
-    default @Nonnull <C> Kleisli<Pair<A, C>, Pair<B, C>, S> first() {
-      return ac -> run(ac.first).map(b -> pair(b, ac.second));
-    }
-
-    default @Nonnull <C> Kleisli<Pair<C, A>, Pair<C, B>, S> second() {
-      return ca -> run(ca.second).map(b -> pair(ca.first, b));
-    }
-
-    default @Nonnull <C, D> Kleisli<Either<A, C>, Either<B, D>, S> sum(final @Nonnull Kleisli<? super C, ? extends D, S> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> ac.either(a -> run(a).map(Either::left), c -> kleisli.run(c).map(Either::right));
-    }
-
-    default @Nonnull <C, D> Kleisli<Pair<A, C>, Pair<B, D>, S> product(final @Nonnull Kleisli<? super C, ? extends D, S> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> run(ac.first).apply(kleisli.run(ac.second).map(d -> b -> pair(b, d)));
-    }
-
-    default @Nonnull <C> Kleisli<Either<A, C>, B, S> fanIn(final @Nonnull Kleisli<? super C, B, S> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> ac.either(Kleisli.this::run, kleisli::run);
-    }
-
-    default @Nonnull <C> Kleisli<A, Pair<B, C>, S> fanOut(final @Nonnull Kleisli<? super A, ? extends C, S> kleisli) {
-      requireNonNull(kleisli);
-      return a -> run(a).apply(kleisli.run(a).map(c -> b -> pair(b, c)));
-    }
-
-    static @Nonnull <A, B, S> Kleisli<A, B, S> lift(final @Nonnull Function<? super A, ? extends B> function) {
-      requireNonNull(function);
-      return a -> unit(function.$(a));
-    }
-
-    static @Nonnull <A, S> Kleisli<A, A, S> id() {
-      return State::unit;
-    }
-
-    static @Nonnull <A, B, S> Kleisli<Pair<Kleisli<A, B, S>, A>, B, S> apply() {
-      return ka -> ka.first.run(ka.second);
-    }
+  static @Nonnull <S, A> State<S, A> unit(final A value) {
+    return s -> pair(s, value);
   }
 }

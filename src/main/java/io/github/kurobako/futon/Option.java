@@ -25,18 +25,18 @@ import java.util.NoSuchElementException;
 
 import static io.github.kurobako.futon.Function.id;
 import static io.github.kurobako.futon.Pair.pair;
-import static java.util.Objects.requireNonNull;
+import static io.github.kurobako.futon.Util.nonNull;
 
 public abstract class Option<A> implements Foldable<A>, Iterable<A> {
   Option() {}
 
   public abstract A asNullable();
 
-  public abstract @Nonnull <B> Option<B> bind(@Nonnull Function<? super A, ? extends Option<B>> function);
-
   public abstract @Nonnull <B, C> Option<C> zip(@Nonnull Option<B> option, @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction);
 
   public abstract @Nonnull <B, C> Pair<? extends Option<B>, ? extends Option<C>> unzip(@Nonnull Function<? super A, Pair<B, C>> function);
+
+  public abstract @Nonnull <B> Option<B> bind(@Nonnull Function<? super A, ? extends Option<B>> function);
 
   public abstract @Nonnull <B> Option<B> apply(@Nonnull Option<? extends Function<? super A, ? extends B>> option);
 
@@ -52,18 +52,22 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
 
   public abstract boolean isNone();
 
-  public static @Nonnull <A> Option<A> join(final @Nonnull Option<? extends Option<A>> option) {
-    return option.bind(id());
-  }
-
   public static @Nonnull <A> Some<A> some(final @Nonnull A value) {
-    requireNonNull(value);
+    nonNull(value);
     return new Some<>(value);
   }
 
   @SuppressWarnings("unchecked")
   public static @Nonnull <A> None<A> none() {
     return (None<A>) None.INSTANCE;
+  }
+
+  public static @Nonnull <A> Option<A> join(final @Nonnull Option<? extends Option<A>> option) {
+    return option.bind(id());
+  }
+
+  public static @Nonnull <A> Some<A> unit(final @Nonnull A value) {
+    return some(value);
   }
 
   public static @Nonnull <A> Option<A> fromNullable(final A value) {
@@ -83,40 +87,40 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B> Option<B> bind(final @Nonnull Function<? super A, ? extends Option<B>> function) {
-      requireNonNull(function);
-      return function.$(value);
-    }
-
-    @Override
     public @Nonnull <B, C> Option<C> zip(final @Nonnull Option<B> option, final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
-      requireNonNull(option);
-      requireNonNull(biFunction);
+      nonNull(option);
+      nonNull(biFunction);
       return option.map(b -> biFunction.$(value, b));
     }
 
     @Override
     public @Nonnull <B, C> Pair<Some<B>, Some<C>> unzip(final @Nonnull Function<? super A, Pair<B, C>> function) {
-      requireNonNull(function);
+      nonNull(function);
       Pair<? extends B, ? extends C> bc = function.$(value);
       return pair(some(bc.first), some(bc.second));
     }
 
     @Override
+    public @Nonnull <B> Option<B> bind(final @Nonnull Function<? super A, ? extends Option<B>> function) {
+      nonNull(function);
+      return function.$(value);
+    }
+
+    @Override
     public @Nonnull <B> Option<B> apply(final @Nonnull Option<? extends Function<? super A, ? extends B>> option) {
-      requireNonNull(option);
+      nonNull(option);
       return option.map(f -> f.$(value));
     }
 
     @Override
     public @Nonnull <B> Some<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-      requireNonNull(function);
+      nonNull(function);
       return some(function.$(value));
     }
 
     @Override
     public @Nonnull Option<A> filter(final @Nonnull Predicate<A> predicate) {
-      requireNonNull(predicate);
+      nonNull(predicate);
       return predicate.$(value) ? this : none();
     }
 
@@ -142,13 +146,13 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
 
     @Override
     public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, final B initial) {
-      requireNonNull(biFunction);
+      nonNull(biFunction);
       return biFunction.$(value, initial);
     }
 
     @Override
     public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, final B initial) {
-      requireNonNull(biFunction);
+      nonNull(biFunction);
       return biFunction.$(initial, value);
     }
 
@@ -198,39 +202,39 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
     }
 
     @Override
-    public @Nonnull <B> None<B> bind(final @Nonnull Function<? super A, ? extends Option<B>> function) {
-      requireNonNull(function);
-      return none();
-    }
-
-    @Override
     public @Nonnull <B, C> None<C> zip(final @Nonnull Option<B> option, final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
-      requireNonNull(option);
-      requireNonNull(biFunction);
+      nonNull(option);
+      nonNull(biFunction);
       return none();
     }
 
     @Override
     public @Nonnull <B, C> Pair<None<B>, None<C>> unzip(final @Nonnull Function<? super A, Pair<B, C>> function) {
-      requireNonNull(function);
+      nonNull(function);
       return pair(none(), none());
     }
 
     @Override
+    public @Nonnull <B> None<B> bind(final @Nonnull Function<? super A, ? extends Option<B>> function) {
+      nonNull(function);
+      return none();
+    }
+
+    @Override
     public @Nonnull <B> None<B> apply(final @Nonnull Option<? extends Function<? super A, ? extends B>> option) {
-      requireNonNull(option);
+      nonNull(option);
       return none();
     }
 
     @Override
     public @Nonnull <B> None<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-      requireNonNull(function);
+      nonNull(function);
       return none();
     }
 
     @Override
     public @Nonnull None<A> filter(final @Nonnull Predicate<A> predicate) {
-      requireNonNull(predicate);
+      nonNull(predicate);
       return none();
     }
 
@@ -256,13 +260,13 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
 
     @Override
     public <B> B foldRight(final @Nonnull BiFunction<? super A, ? super B, ? extends B> biFunction, final B initial) {
-      requireNonNull(biFunction);
+      nonNull(biFunction);
       return initial;
     }
 
     @Override
     public <B> B foldLeft(final @Nonnull BiFunction<? super B, ? super A, ? extends B> biFunction, final B initial) {
-      requireNonNull(biFunction);
+      nonNull(biFunction);
       return initial;
     }
 
@@ -277,70 +281,5 @@ public abstract class Option<A> implements Foldable<A>, Iterable<A> {
     }
 
     private static final None<Object> INSTANCE = new None<>();
-  }
-
-  @FunctionalInterface
-  interface Kleisli<A, B> {
-
-    @Nonnull Option<B> run(A a);
-
-    default @Nonnull <C> Kleisli<A, C> compose(final @Nonnull Kleisli<? super B, C> kleisli) {
-      requireNonNull(kleisli);
-      return a -> run(a).bind(kleisli::run);
-    }
-
-    default @Nonnull <C> Kleisli<A, C> compose(final @Nonnull Function<? super B, ? extends C> function) {
-      requireNonNull(function);
-      return a -> run(a).map(function);
-    }
-
-    default @Nonnull <C> Kleisli<Either<A, C>, Either<B, C>> left() {
-      return ac -> ac.either(a -> run(a).map(Either::left), c -> some(Either.right(c)));
-    }
-
-    default @Nonnull <C> Kleisli<Either<C, A>, Either<C, B>> right() {
-      return ca -> ca.either(c -> some(Either.left(c)), a -> run(a).map(Either::right));
-    }
-
-    default @Nonnull <C> Kleisli<Pair<A, C>, Pair<B, C>> first() {
-      return ac -> run(ac.first).zip(some(ac.second), Pair::pair);
-    }
-
-    default @Nonnull <C> Kleisli<Pair<C, A>, Pair<C, B>> second() {
-      return ca -> some(ca.first).zip(run(ca.second), Pair::pair);
-    }
-
-    default @Nonnull <C, D> Kleisli<Either<A, C>, Either<B, D>> sum(final @Nonnull Kleisli<? super C, ? extends D> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> ac.either(a -> run(a).map(Either::left), c -> kleisli.run(c).map(Either::right));
-    }
-
-    default @Nonnull <C, D> Kleisli<Pair<A, C>, Pair<B, D>> product(final @Nonnull Kleisli<? super C, ? extends D> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> run(ac.first).zip(kleisli.run(ac.second), Pair::pair);
-    }
-
-    default @Nonnull <C> Kleisli<Either<A, C>, B> fanIn(final @Nonnull Kleisli<? super C, B> kleisli) {
-      requireNonNull(kleisli);
-      return ac -> ac.either(Kleisli.this::run, kleisli::run);
-    }
-
-    default @Nonnull <C> Kleisli<A, Pair<B, C>> fanOut(final @Nonnull Kleisli<? super A, ? extends C> kleisli) {
-      requireNonNull(kleisli);
-      return a -> run(a).zip(kleisli.run(a), Pair::pair);
-    }
-
-    static @Nonnull <A, B> Kleisli<A, B> lift(final @Nonnull Function<? super A, ? extends B> function) {
-      requireNonNull(function);
-      return a -> some(function.$(a));
-    }
-
-    static @Nonnull <A> Kleisli<A, A> id() {
-      return Option::some;
-    }
-
-    static @Nonnull <A, B> Kleisli<Pair<Kleisli<A, B>, A>, B> apply() {
-      return ka -> ka.first.run(ka.second);
-    }
   }
 }
