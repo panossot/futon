@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Fedor Gavrilov
+ * Copyright (C) 2017 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,27 +19,31 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static io.github.kurobako.futon.Pair.pair;
 import static io.github.kurobako.futon.Util.nonNull;
 
+/**
+ * A version of {@link Value} which memoizes its result once it is retrieved using double-checked locking.
+ * @param <A> result type.
+ */
 public final class Thunk<A> implements Value<A> {
   private volatile Value<A> computation;
   private A result;
 
-  public Thunk(final @Nonnull Value<A> computation) {
-    nonNull(computation);
+  private Thunk(final Value<A> computation) {
     this.computation = computation;
   }
 
   @Override
-  public A extract() {
+  public @Nonnull A get() {
     boolean done = (computation == null);
     if (!done) {
       synchronized (this) {
         done = (computation == null);
         if (!done) {
-          result = computation.extract();
+          result = computation.get();
           computation = null;
         }
       }
@@ -48,50 +52,20 @@ public final class Thunk<A> implements Value<A> {
   }
 
   @Override
-  public @Nonnull <B> Thunk<B> extend(final @Nonnull Function<? super Value<A>, B> function) {
-    nonNull(function);
-    return new Thunk<>(() -> function.$(this));
-  }
-
-  @Override
-  public @Nonnull Thunk<Thunk<A>> duplicate() {
-    return new Thunk<>(() -> this);
-  }
-
-  @Override
-  public @Nonnull <B, C> Thunk<C> zip(final @Nonnull Value<B> value, final @Nonnull BiFunction<? super A, ? super B, ? extends C> biFunction) {
-    nonNull(value);
-    nonNull(biFunction);
-    return new Thunk<>(() -> biFunction.$(extract(), value.extract()));
-  }
-
-  @Override
-  public @Nonnull <B, C> Pair<Thunk<B>, Thunk<C>> unzip(final @Nonnull Function<? super A, Pair<B, C>> function) {
-    nonNull(function);
-    return pair(new Thunk<>(() -> function.$(extract()).first), new Thunk<>(() -> function.$(extract()).second));
-  }
-
-  @Override
-  public @Nonnull <B> Thunk<B> bind(final @Nonnull Function<? super A, ? extends Value<B>> function) {
-    nonNull(function);
-    return new Thunk<>(() -> function.$(extract()).extract());
-  }
-
-  @Override
-  public @Nonnull <B> Thunk<B> apply(final @Nonnull Value<? extends Function<? super A, ? extends B>> value) {
-    nonNull(value);
-    return new Thunk<>(() -> value.extract().$(extract()));
-  }
-
-  @Override
-  public @Nonnull <B> Thunk<B> map(final @Nonnull Function<? super A, ? extends B> function) {
-    nonNull(function);
-    return new Thunk<>(() -> function.$(extract()));
-  }
-
-  @Override
   public @Nonnull String toString() {
     final boolean evaluated = (computation == null);
     return "Thunk#" + System.identityHashCode(this) + "[" + (evaluated ? String.valueOf(result) : "?") + "]";
+  }
+
+  /**
+   * Creates a new Thunk which will run the given computation when {@link #get()} will be called for the first time.
+   * @param computation a computation to run. Can't be null.
+   * @param <A> result type.
+   * @return new Thunk. Can't be null.
+   * @throws NullPointerException if the argument was null.
+   */
+  public static @Nonnull <A> Thunk<A> thunk(final Value<A> computation) {
+    nonNull(computation);
+    return new Thunk<>(computation);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Fedor Gavrilov
+ * Copyright (C) 2017 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,48 +20,112 @@ package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
 
-import static io.github.kurobako.futon.Function.id;
 import static io.github.kurobako.futon.Pair.pair;
 import static io.github.kurobako.futon.Util.nonNull;
 
-public interface Environment<E, A> {
-  @Nonnull Pair<E, A> run();
+/**
+ * <p>Environment comonad is a computation which returns a value <b>A</b> together with some context <b>C</b>. Also known
+ * as Coreader since it is dual to {@link Reader} monad.</p>
+ * <p>Environment contains methods to modify both the context and the produced value.</p>
+ * <p>{@link #map(Function)} makes Environment a functor.</p>
+ * <p>{@link #extend(Function)} and {@link #get()} form a comonad.</p>
+ * @param <C> context type.
+ * @param <A> value type.
+ */
+public interface Environment<C, A> {
+  /**
+   * Runs the computation, producing a value <b>A</b> together with a context <b>A</b>.
+   * @return <b>(C, A)</b> {@link Pair}. Can't be null.
+   */
+  @Nonnull Pair<C, A> run();
 
-  default E ask() {
+  /**
+   * Returns the context of this computation.
+   * @return computation context. Can't be null;
+   */
+  default @Nonnull C ask() {
     return run().first;
   }
 
-  default <F> F asks(final @Nonnull Function<? super E, ? extends F> function) {
-    return nonNull(function).$(run().first);
-  }
-
-  default <F> Environment<F, A> local(final @Nonnull Function<? super E, ? extends F> function) {
-    nonNull(function);
-    final Pair<F, A> fa = run().biMap(function, id());
-    return () -> fa;
-  }
-
-  default A extract() {
+  /**
+   * Returns a value of this computation.
+   * @return value produced by computaion. Can't be null.
+   */
+  default @Nonnull A get() {
     return run().second;
   }
 
-  default @Nonnull Environment<E, Environment<E, A>> duplicate() {
-    return extend(id());
+  /**
+   * Returns the context of this computation transformed by the given function.
+   * @param function <b>C -&gt; F</b> transformation. Can't be null.
+   * @param <F> transformed context type.
+   * @return transformed context. Can't be null.
+   * @throws NullPointerException if the argument was null.
+   */
+  default @Nonnull <F> F asks(final Function<? super C, ? extends F> function) {
+    return nonNull(function).$(run().first);
   }
 
-  default @Nonnull <B> Environment<E, B> extend(final @Nonnull Function<? super Environment<E, A>, ? extends B> function) {
+  /**
+   * Returns a new Environment with its context transformed by the given function.
+   * @param function <b>C -&gt; F</b> transformation. Can't be null.
+   * @param <F> transformed context type.
+   * @return an Environment with its context transformed. Can't be null.
+   * @throws NullPointerException if the argument was null.
+   */
+  default <F> Environment<F, A> local(final Function<? super C, ? extends F> function) {
+    nonNull(function);
+    final Pair<F, A> fa = run().biMap(function, arg -> arg);
+    return () -> fa;
+  }
+
+  /**
+   * Returns a new Environment whose produced value is the product of applying the given function to this Environment's
+   * produced value.
+   * @param function <b>A -&gt; B</b> transformation. Can't be null.
+   * @param <B> new value type.
+   * @return new Environment. Can't be null.
+   * @throws NullPointerException if the argument was null.
+   */
+  default @Nonnull <B> Environment<C, B> map(final Function<? super A, ? extends B> function) {
+    nonNull(function);
+    final Pair<C, A> ca = run();
+    return environment(ca.first, function.$(run().second));
+  }
+
+  /**
+   * Wraps this Environment into another layer as the wrapper's produced value. The context is the same for both
+   * inner and outer Environments.
+   * @return wrapped Environment. Can't be null.
+   */
+  default @Nonnull Environment<C, Environment<C, A>> duplicate() {
+    return extend(arg -> arg);
+  }
+
+  /**
+   * Returns a new Environment with the same context as this one, but its return value replaced by application of the
+   * given function to this Environment.
+   * @param function <b>Environment&lt;C, A&gt; -&gt; B</b> transformation. Can't be null.
+   * @param <B> new value type.
+   * @return new Environment. Can't be null.
+   * @throws NullPointerException if the argument was null.
+   */
+  default @Nonnull <B> Environment<C, B> extend(final @Nonnull Function<? super Environment<C, A>, ? extends B> function) {
     nonNull(function);
     return environment(run().first, function.$(this));
   }
 
-  default @Nonnull <B> Environment<E, B> map(final @Nonnull Function<? super A, ? extends B> function) {
-    nonNull(function);
-    final Pair<E, A> ea = run();
-    return environment(ea.first, function.$(run().second));
-  }
-
-  static @Nonnull <E, A> Environment<E, A> environment(final E environment, final A value) {
-    final Pair<E, A> ea = pair(environment, value);
-    return () -> ea;
+  /**
+   * Creates a new Environment with the given context and produced values.
+   * @param context new Environment's context value.
+   * @param value new Environment's produced value.
+   * @param <E> context type.
+   * @param <A> value type.
+   * @return new Environment. Can't be null.
+   * @throws NullPointerException if any argument was null.
+   */
+  static @Nonnull <E, A> Environment<E, A> environment(final E context, final A value) {
+    final Pair<E, A> ca = pair(context, value);
+    return () -> ca;
   }
 }

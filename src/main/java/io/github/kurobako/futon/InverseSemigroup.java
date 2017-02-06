@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Fedor Gavrilov
+ * Copyright (C) 2017 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,20 @@
 
 package io.github.kurobako.futon;
 
+import javax.annotation.Nonnull;
+
+/**
+ * <p>Inverse semigroup is a {@link Semigroup} with an inverse operation added.</p>
+ * <p>Inverse Semigroup with a neutral element (neutral.append(this) equal to this.append(neutral) equal to this) is a
+ * group.</p>
+ * @see <a href="https://en.wikipedia.org/wiki/Inverse_semigroup">https://en.wikipedia.org/wiki/Inverse_semigroup</a>
+ * @param <E>
+ */
 public interface InverseSemigroup<E extends InverseSemigroup<E>> extends Semigroup<E> {
-  E inverse();
+  /**
+   * Returns an inverse element for this member so that this.append(this.inverse()).append(this) is equal to this and
+   * this.inverse().append(this).append(this.inverse()) is equal to this.inverse().
+   * @return an inverse. Can't be null.
+   */
+  @Nonnull E inverse();
 }

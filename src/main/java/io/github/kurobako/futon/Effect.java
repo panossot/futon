@@ -18,10 +18,20 @@
 
 package io.github.kurobako.futon;
 
+import javax.annotation.Nonnull;
+
 /**
- * A Unit has a single possible value, which is its {@link #INSTANCE} and might be used to represent a value you don't
- * care about.
+ * <p>Impure action which may have side effects and throw checked exceptions.</p>
+ * <p>Used in {@link Task}.</p>
+ * @param <A> argument type.
+ * @param <B> return type.
  */
-public enum Unit {
-  INSTANCE
+public interface Effect<A, B> {
+  /**
+   * Perform the action.
+   * @param arg argument. Can't be null.
+   * @return result value. Can't be null.
+   * @throws Exception exception thrown while performing the action.
+   */
+  @Nonnull B perform(A arg) throws Exception;
 }

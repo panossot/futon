@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Fedor Gavrilov
+ * Copyright (C) 2017 Fedor Gavrilov
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,19 +18,13 @@
 
 package io.github.kurobako.futon;
 
+import javax.annotation.Nullable;
+
 final class Util {
   private Util() {}
 
-  static <A> A nonNull(final A value) {
+  static <A> A nonNull(final @Nullable A value) {
     if (value == null) throw new NullPointerException();
     return value;
-  }
-
-  static int hash(final Object value) {
-    return value == null ? 0 : value.hashCode();
-  }
-
-  static boolean equal(final Object first, final Object second) {
-    return first == null ? second == null : first.equals(second);
   }
 }

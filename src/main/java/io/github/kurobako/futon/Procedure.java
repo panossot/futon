@@ -18,10 +18,23 @@
 
 package io.github.kurobako.futon;
 
+import javax.annotation.Nonnull;
+
 /**
- * A Unit has a single possible value, which is its {@link #INSTANCE} and might be used to represent a value you don't
- * care about.
+ * Procedure is a convenience subinterface of {@link Effect} for actions which return void.
+ * @param <A> argument type.
  */
-public enum Unit {
-  INSTANCE
+public interface Procedure<A> extends Effect<A, Unit> {
+  /**
+   * Run the procedure.
+   * @param arg argument. Can't be null.
+   * @throws Exception exception thrown while running the procedure.
+   */
+  void run(A arg) throws Exception;
+
+  @Override
+  default @Nonnull Unit perform(A arg) throws Exception {
+    run(arg);
+    return Unit.INSTANCE;
+  }
 }
