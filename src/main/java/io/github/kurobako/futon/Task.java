@@ -18,24 +18,21 @@
 
 package io.github.kurobako.futon;
 
+import io.github.kurobako.futon.annotation.Impure;
+
 import javax.annotation.Nonnull;
 
 import java.io.Closeable;
 import java.util.concurrent.ExecutionException;
 
-import static io.github.kurobako.futon.Either.left;
-import static io.github.kurobako.futon.Either.right;
 import static io.github.kurobako.futon.Util.nonNull;
 
 /**
  * <p>Task monad is a computation built out of individual impure, side-effecting actions wrapped inside monad to be executed
  * all at once later</p>
- * <p>Task memoizes its result after {@link #execute()} is called for the first time, so consecutive calls will return
- * the same value without any additional external actions. A new instance of Task needs to be built if new portion of
- * side effects needs to be executed. Thus, task allows for some reasoning about the side-effecting code and may be used
- * in a pure code.</p>
- * <p>Task may use custom finalizer code for its resources and catches any checked exceptions produced by {@link Effect}
- * instances it runs. Note that {@link RuntimeException} thrown on execution will be rethrown as is unless caugh with
+ * <p>Thus, task allows for some reasoning about the side-effecting code. Task may use custom finalizer code for its
+ * resources and catches any checked exceptions produced by {@link Effect}
+ * instances it runs. Note that {@link RuntimeException} thrown on execution will be rethrown as is unless caught with
  * {@link #caught(Function)}.</p>
  * <p>{@link #map(Function)} makes Task a functor.</p>
  * <p>{@link #bind(Function)} and {@link #task(A)} form a monad.</p>
@@ -43,10 +40,9 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <A> result type.
  */
 public final class Task<A> {
-  volatile Object resource;
-  Effect<Object, ? extends A> effect;
-  Procedure<Object> cleanup;
-  Either<Exception, A> result;
+  @Nonnull Object resource;
+  @Nonnull Effect<Object, ? extends A> effect;
+  @Nonnull Procedure<Object> cleanup;
 
   Task(final Object initial, final Effect<Object, A> effect, final Procedure<Object> cleanup) {
     this.resource = initial;
@@ -56,41 +52,18 @@ public final class Task<A> {
 
   @SuppressWarnings("unchecked")
   @Nonnull <E extends Exception, R> R perform(Function<? super A, ? extends R> onSuccess, ExceptionHandler<? extends E, ? extends R> onFailure) throws E {
-    boolean performed = (resource == null);
-    if (!performed) {
-      synchronized (this) {
-        performed = (resource == null);
-        if (!performed) {
-          try {
-            Exception failure = null;
-            A success = null;
-            try {
-              success = effect.perform(resource);
-              result = right(success);
-              return onSuccess.$(effect.perform(resource));
-            } catch (final Exception e) {
-              failure = e;
-              result = left(failure);
-              return onFailure.handle(failure);
-            } finally {
-              try {
-                cleanup.run(resource);
-              } catch (final Exception e) {
-                if (failure != null) failure.addSuppressed(e);
-              }
-            }
-          } finally {
-            effect = null;
-            cleanup = null;
-            resource = null;
-          }
-        }
+    Exception failure = null;
+    try {
+      return onSuccess.$(effect.perform(resource));
+    } catch (final Exception e) {
+      failure = e;
+      return onFailure.handle(failure);
+    } finally {
+      try {
+        cleanup.run(resource);
+      } catch (final Exception e) {
+        if (failure != null) failure.addSuppressed(e);
       }
-    }
-    if (result instanceof Either.Left) {
-      return onFailure.handle(((Either.Left<Exception, A>)result).value);
-    } else {
-      return onSuccess.$(((Either.Right<Exception, A>)result).value);
     }
   }
 
@@ -98,9 +71,12 @@ public final class Task<A> {
    * Executes this task, running all {@link Effect}s and transforming {@link Function}s it consists of one after another.
    * Checked exceptions will be caught and rethrown wrapped into {@link ExecutionException} which might be investigated
    * using {@link Exception#getCause()}.
+   * Subsequent calls of this method might result in different values returned due to impure nature of effects wrapped
+   * in a task.
    * @return execution result. Can't be null.
    * @throws ExecutionException if checked except
    */
+  @Impure
   public @Nonnull A execute() throws ExecutionException {
     try {
       return perform(arg -> arg, rethrow());
@@ -117,8 +93,11 @@ public final class Task<A> {
   /**
    * Executes this task like {@link #execute()} does, but checked exceptions are returned unwrapped as {@link Either.Left}
    *  value. If the execution is succesful, {@link Either.Right} is returned containing the result.
+   * Subsequent calls of this method might result in different values returned due to impure nature of effects wrapped
+   * in a task.
    * @return left failure or right result. Can't be null.
    */
+  @Impure
   public @Nonnull Either<Exception, A> executeChecked() {
     return perform(Either::right, Either::left);
   }

@@ -18,6 +18,7 @@
 
 package io.github.kurobako.futon;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -56,7 +57,7 @@ public abstract class Sequence<A> implements Semigroup<Sequence<A>>, Foldable<A>
    * @return a sequence element. Can't be null.
    * @throws IndexOutOfBoundsException if the index less than 0 or more than this sequence's length.
    */
-  public abstract @Nonnull A get(int idx);
+  public abstract @Nonnull A get(@Nonnegative int idx);
 
   /**
    * Retrieves the first element of this sequence. <b>O(1)</b>.

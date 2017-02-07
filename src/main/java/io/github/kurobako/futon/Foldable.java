@@ -29,7 +29,7 @@ import javax.annotation.Nonnull;
  */
 public interface Foldable<A> {
   /**
-   * Reduces this container from right ('end') to left ('start') using the given binary function and initial value.
+   * Reduces this container from right (last element) to left (first element) using the given binary function and initial value.
    * @param function <b>A -&gt; B -&gt; B</b>: function accepting accumulated result and a new value, producing new accumulated value.
    * @param initial initial accumulator.
    * @param <B> accumulator type.
@@ -39,7 +39,7 @@ public interface Foldable<A> {
   @Nonnull <B> B foldRight(BiFunction<? super A, ? super B, ? extends B> function, B initial);
 
   /**
-   * Reduces this container from left ('start') to right ('end') using the given binary function and initial value.
+   * Reduces this container from left (first element) to right (last element) using the given binary function and initial value.
    * @param function <b>B -&gt; A -&gt; B</b>: function accepting accumulated result and a new value, producing new accumulated value.
    * @param initial initial accumulator.
    * @param <B> accumulator type.

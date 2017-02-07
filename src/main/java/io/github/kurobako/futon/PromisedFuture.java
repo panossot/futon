@@ -75,12 +75,12 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
   public @Nonnull <B> Promise<B> contraMap(final Function<? super B, ? extends A> function) {
     nonNull(function);
     final PromisedFuture<B> result = new PromisedFuture<>();
-    this.tryComplete(result.map(function));
+    this.tryCompleteWith(result.map(function));
     return result;
   }
 
   @Override
-  public @Nonnull Future<A> tryComplete(final Future<? extends A> future) {
+  public @Nonnull Future<A> tryCompleteWith(final Future<? extends A> future) {
     nonNull(future);
     if (state.isRight()) throw new IllegalStateException();
     future.then(a -> {
@@ -114,10 +114,9 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
   public @Nonnull <B> Future<B> bind(final Function<? super A, ? extends Future<B>> function) {
     nonNull(function);
     final PromisedFuture<B> result = new PromisedFuture<>();
-    final Runnable action = () -> {
-      state.match(incomplete -> result.future(),
-                  complete -> complete.value.either(result::failure, right -> result.tryComplete(function.$(right))));
-    };
+    final Runnable action = () -> state.match(incomplete -> result.future(),
+                                              complete -> complete.value.either(result::failure,
+                                                                                right -> result.tryCompleteWith(function.$(right))));
     return completeWith(result, action);
   }
 
@@ -199,7 +198,7 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
     final PromisedFuture<A> result = new PromisedFuture<>();
     final Runnable action = () -> {
       state.match(incomplete -> result.future(),
-                  complete -> complete.value.match(left -> result.tryComplete(function.$(left.value)),
+                  complete -> complete.value.match(left -> result.tryCompleteWith(function.$(left.value)),
                                                    right -> result.success(right.value)));
     };
     return completeWith(result, action);

@@ -18,6 +18,8 @@
 
 package io.github.kurobako.futon;
 
+import io.github.kurobako.futon.annotation.Impure;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -26,7 +28,7 @@ import javax.annotation.Nonnull;
  * <p>Promise might be completed with either a result value, in which case it is considered to be a success, or with a
  * {@link Throwable}, in which it is considered a failure. Subsequent attempts to complete this Promise will result
  * in an {@link IllegalStateException} being thrown. {@link #future()} method might be used to obtain associated
- * future and pass it to another thread. {@link #tryComplete(Future)} method might be used to chain futures with promises,
+ * future and pass it to another thread. {@link #tryCompleteWith(Future)} method might be used to chain futures with promises,
  *  however, it introduces nondeterminism in a program since attached futures will be racing to complete push their
  *  results into the promise.</p>
  *  <p>{@link #contraMap(Function)} makes Predicate a contravariant functor.</p>
@@ -49,6 +51,22 @@ public interface Promise<A> {
   @Nonnull Future<A> success(final A value);
 
   /**
+   * Tries to complete this Promise with a value.
+   * @param value completion value. Can't be null.
+   * @return true if this method was the one to complete the Promise, false otherwise.
+   * @throws NullPointerException if the argument was null.
+   */
+  @Impure
+  default boolean trySuccess(final A value) {
+    try {
+      success(value);
+      return true;
+    } catch (IllegalStateException e) {
+      return false;
+    }
+  }
+
+  /**
    * Completes this Promise with an exception.
    * @param cause failure cause. Can't be null.
    * @return associated Future. Can't be null.
@@ -58,6 +76,22 @@ public interface Promise<A> {
   @Nonnull Future<A> failure(final Throwable cause);
 
   /**
+   * Tries to complete this Promise with an exception.
+   * @param cause failure cause. Can't be null.
+   * @return true if this method was the one to complete the Promise, false otherwise.
+   * @throws NullPointerException if the argument was null.
+   */
+  @Impure
+  default boolean tryFailure(final Throwable cause) {
+    try {
+      failure(cause);
+      return true;
+    } catch (IllegalStateException e) {
+      return false;
+    }
+  }
+
+  /**
    * Completes this Promise with an {@link Either} which might holds either a left failure cause or a right success value.
    * @param completion <b>Throwable | A</b>: either success or a failure. Can't be null.
    * @return associated Future. Can't be null.
@@ -65,6 +99,22 @@ public interface Promise<A> {
    * @throws IllegalStateException if already completed.
    */
   @Nonnull Future<A> complete(final Either<? extends Throwable, ? extends A> completion);
+
+  /**
+   * Tries to complete this Promise with an {@link Either} which might holds either a left failure cause or a right success value.
+   * @param completion <b>Throwable | A</b>: either success or a failure. Can't be null.
+   * @return true if this method was the one to complete the Promise, false otherwise.
+   * @throws NullPointerException if the argument was null.
+   */
+  @Impure
+  default boolean tryComplete(final Either<? extends Throwable, ? extends A> completion) {
+    try {
+      complete(completion);
+      return true;
+    } catch (IllegalStateException e) {
+      return false;
+    }
+  }
 
   /**
    * Returns a new Promise accepting values of type <b>B</b> which are first transformed using the given function and
@@ -87,7 +137,7 @@ public interface Promise<A> {
    * @throws NullPointerException is the argument was null.
    * @throws IllegalStateException if already completed.
    */
-  @Nonnull Future<A> tryComplete(Future<? extends A> future);
+  @Nonnull Future<A> tryCompleteWith(Future<? extends A> future);
 
   /**
    * Creates a new Promise to be complete with either result value or a failure cause.
