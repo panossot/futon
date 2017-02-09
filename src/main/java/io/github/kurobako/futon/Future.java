@@ -126,7 +126,7 @@ public interface Future<A> {
    * @return new Future. Can't be null.
    * @throws NullPointerException if the argument was null.
    */
-  @Nonnull Future<A> fallback(Function<? super Throwable, Future<A>> function);
+  @Nonnull Future<A> fallback(Kleisli<? super Throwable, A> function);
 
   /**
    * Creates a new Future already complete with the given value as success.

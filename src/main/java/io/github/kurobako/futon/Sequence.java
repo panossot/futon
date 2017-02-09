@@ -146,8 +146,8 @@ public abstract class Sequence<A> implements Semigroup<Sequence<A>>, Foldable<A>
   public abstract @Nonnull Sequence<A> append(Sequence<A> sequence);
 
   /**
-   * Returns the amout of elements in this sequence. <b>O(1)</b>.
-   * @return non-negative lenght.
+   * Returns the amount of elements in this sequence. <b>O(1)</b>.
+   * @return non-negative length.
    */
   public abstract int length();
 

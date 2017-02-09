@@ -34,7 +34,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class PromisedFuture<A> implements Promise<A>, Future<A> {
   private static final @Nonnull AtomicReferenceFieldUpdater<PromisedFuture, Either> updater = newUpdater(PromisedFuture.class, Either.class, "state");
 
-  private volatile @Nonnull Either<Sequence<Runnable>, Either<Throwable, A>> state;
+  private volatile @Nonnull Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> state;
 
   PromisedFuture() {
     updater.lazySet(this, left(sequence()));
@@ -57,7 +57,7 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
   public @Nonnull Future<A> complete(final Either<? extends Throwable, ? extends A> completion) {
     nonNull(completion);
     final Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> newState = right(completion);
-    Either<Sequence<Runnable>, Either<Throwable, A>> snapshot;
+    Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> snapshot;
     do {
       snapshot = state;
       if (snapshot.isRight()) throw new IllegalStateException();
@@ -66,7 +66,7 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
     return this;
   }
 
-  private void runCallbacks(final Either<Sequence<Runnable>, Either<Throwable, A>> state) {
+  private void runCallbacks(final Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> state) {
     state.match(left -> left.value.foldLeft((u, runnable) -> {runnable.run(); return u; }, Unit.INSTANCE),
                 right -> Unit.INSTANCE);
   }
@@ -117,7 +117,7 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
     final Runnable action = () -> state.match(incomplete -> result.future(),
                                               complete -> complete.value.either(result::failure,
                                                                                 right -> result.tryCompleteWith(function.run(right))));
-    return completeWith(result, action);
+    return completeWithFuture(result, action);
   }
 
   @Override
@@ -136,12 +136,12 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
                                                      }
                                                    }));
     };
-    return completeWith(result, action);
+    return completeWithFuture(result, action);
   }
 
-  private @Nonnull <B> Future<B> completeWith(final Future<B> result, final Runnable action) {
-    Either<Sequence<Runnable>, Either<Throwable, A>> snapshot;
-    Either<Sequence<Runnable>, Either<Throwable, A>> newState;
+  private @Nonnull <B> Future<B> completeWithFuture(final Future<B> result, final Runnable action) {
+    Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> snapshot;
+    Either<Sequence<Runnable>, Either<? extends Throwable, ? extends A>> newState;
     do {
       snapshot = state;
       if (snapshot.isRight()) {
@@ -171,7 +171,7 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
                   complete -> complete.value.match(left -> result.failure(left.value),
                                                    right -> result.success(function.$(right.value))));
     };
-    return completeWith(result, action);
+    return completeWithFuture(result, action);
   }
 
   @Override
@@ -189,18 +189,18 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
                   complete -> complete.value.match(left -> result.success(function.$(left.value)),
                                                    right -> result.success(right.value)));
     };
-    return completeWith(result, action);
+    return completeWithFuture(result, action);
   }
 
   @Override
-  public @Nonnull Future<A> fallback(final Function<? super Throwable, Future<A>> function) {
+  public @Nonnull Future<A> fallback(final Kleisli<? super Throwable, A> function) {
     nonNull(function);
     final PromisedFuture<A> result = new PromisedFuture<>();
     final Runnable action = () -> {
       state.match(incomplete -> result.future(),
-                  complete -> complete.value.match(left -> result.tryCompleteWith(function.$(left.value)),
+                  complete -> complete.value.match(left -> result.tryCompleteWith(function.run(left.value)),
                                                    right -> result.success(right.value)));
     };
-    return completeWith(result, action);
+    return completeWithFuture(result, action);
   }
 }
