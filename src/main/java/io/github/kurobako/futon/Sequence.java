@@ -21,6 +21,7 @@ package io.github.kurobako.futon;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -35,10 +36,12 @@ import static io.github.kurobako.futon.Util.nonNull;
  * library, null values are not supported.</p>
  * <p>{@link #map(Function)} makes Sequence a functor.</p>
  * <p>{@link #apply(Sequence)} and {@link #sequence(A)} form an applicative functor.</p>
- * <p>{@link #bind(Function)} and {@link #sequence(A)} form a monad.</p>
+ * <p>{@link #bind(Kleisli)} and {@link #sequence(A)} form a monad.</p>
+ * <p>{@link #append(Sequence) and {@link #sequence()}} form a monoid.</p>
  * <p>This class is not supposed to be extended by users.</p>
  * @param <A> element type.
  */
+@Immutable
 public abstract class Sequence<A> implements Semigroup<Sequence<A>>, Foldable<A>, Iterable<A> {
   private static final int RESERVED_BITS = 2;
   private static final byte AFX_TYPE_1 = 0x0;
@@ -184,14 +187,14 @@ public abstract class Sequence<A> implements Semigroup<Sequence<A>>, Foldable<A>
   /**
    * Returns a Sequence which is the product of applying the given function to this Sequence's elements. If this or the
    * Sequence returned by the argument function is empty no transformation happens.
-   * @param function <b>A -&gt; Sequence&lt;B&gt;</b> transformation. Can't be null.
+   * @param kleisli <b>A -&gt; Sequence&lt;B&gt;</b> transformation. Can't be null.
    * @param <B> new element type.
    * @return transformed Sequence. Can't be null.
    * @throws NullPointerException if the argument was null.
    */
-  public @Nonnull <B> Sequence<B> bind(final Function<? super A, ? extends Sequence<B>> function) {
-    nonNull(function);
-    return foldLeft((seq, a) -> seq.append(function.$(a)), sequence());
+  public @Nonnull <B> Sequence<B> bind(final Kleisli<? super A, B> kleisli) {
+    nonNull(kleisli);
+    return foldLeft((seq, a) -> seq.append(kleisli.run(a)), sequence());
   }
 
   /**
@@ -1836,6 +1839,184 @@ public abstract class Sequence<A> implements Semigroup<Sequence<A>>, Foldable<A>
       static @Nonnull <A> SimpleNodes<A> empty() {
         return (SimpleNodes<A>) EMPTY;
       }
+    }
+  }
+
+  /**
+   * <p>Kleisli arrow is a pure function from an argument of type <b>A</b> to <b>Sequence&lt;B&gt;</b>. </p>
+   * <p>It can be combined with other arrows of the same type (but parameterized differently) in ways similar to how
+   * {@link Function}s can be combined with other functions.</p>
+   * @param <A> argument type.
+   * @param <B> return type parameter.
+   */
+  @FunctionalInterface
+  interface Kleisli<A, B> {
+    /**
+     * Run the computation, producing a monad.
+     * @param arg computation argument. Can't be null.
+     * @return new monad. Can't be null.
+     */
+    @Nonnull Sequence<B> run(A arg);
+
+    /**
+     * Returns an arrow combining this arrow with the given arrow: <b>Z -&gt; A -&gt; B</b>.
+     * @param kleisli <b>Z -&gt; A</b> arrow. Can't be null.
+     * @param <Z> argument type for the new arrow.
+     * @return new <b>Z -&gt; A</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <Z> Kleisli<Z, B> precomposeKleisli(final Kleisli<? super Z, A> kleisli) {
+      nonNull(kleisli);
+      return z -> kleisli.run(z).bind(this);
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given pure function: <b>Z -&gt; A -&gt; B</b>.
+     * @param function <b>Z -&gt; A</b> function. Can't be null.
+     * @param <Z> argument type for the new arrow.
+     * @return new <b>Z -&gt; A</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <Z> Kleisli<Z, B> precomposeFunction(final Function<? super Z, ? extends A> function) {
+      nonNull(function);
+      return z -> run(function.$(z));
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given arrow: <b>A -&gt; B -&gt; C</b>.
+     * @param kleisli <b>B -&gt; C</b> arrow. Can't be null.
+     * @param <C> return type for the new arrow.
+     * @return new <b>A -&gt; C</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <C> Kleisli<A, C> postcomposeKleisli(final Kleisli<? super B, C> kleisli) {
+      nonNull(kleisli);
+      return a -> run(a).bind(kleisli);
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given pure function: <b>A -&gt; B -&gt; C</b>.
+     * @param function <b>B -&gt; C</b> function. Can't be null.
+     * @param <C> return type for the new arrow.
+     * @return new <b>A -&gt; C</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <C> Kleisli<A, C> postcomposeFunction(final Function<? super B, ? extends C> function) {
+      nonNull(function);
+      return a -> run(a).map(function);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow of it is {@link Either.Left} and passes it
+     * unchanged otherwise.
+     * @param <C> right component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Either<A, C>, Either<B, C>> left() {
+      return ac -> ac.either(a -> run(a).map(Either::left), c -> sequence(Either.right(c)));
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow of it is {@link Either.Right} and passes it
+     * unchanged otherwise.
+     * @param <C> left component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Either<C, A>, Either<C, B>> right() {
+      return ca -> ca.either(c -> sequence(Either.left(c)), a -> run(a).map(Either::right));
+    }
+
+    /**
+     * Returns an arrow which maps first part of its input and passes the second part unchanged.
+     * @param <C> right component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Pair<A, C>, Pair<B, C>> first() {
+      return ac -> run(ac.first).zip(sequence(ac.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps second part of its input and passes the first part unchanged.
+     * @param <C> left component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Pair<C, A>, Pair<C, B>> second() {
+      return ca -> sequence(ca.first).zip(run(ca.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow if it is {@link Either.Left} and using the given arrow if
+     * it is {@link Either.Right}.
+     * @param kleisli right <b>C -&gt; D</b> mapping. Can't be null.
+     * @param <C> right argument type.
+     * @param <D> right return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C, D> Kleisli<Either<A, C>, Either<B, D>> sum(final Kleisli<? super C, D> kleisli) {
+      nonNull(kleisli);
+      return ac -> ac.either(a -> run(a).map(Either::left), c -> kleisli.run(c).map(Either::right));
+    }
+
+    /**
+     * Returns an arrow which maps the first part of its input using this arrow and the second part using the given arrow.
+     * @param kleisli second <b>C -&gt; D</b> mapping. Can't be null.
+     * @param <C> second argument type.
+     * @param <D> second return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C, D> Kleisli<Pair<A, C>, Pair<B, D>> product(final Kleisli<? super C, D> kleisli) {
+      nonNull(kleisli);
+      return ac -> run(ac.first).zip(kleisli.run(ac.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps input using this arrow if it is {@link Either.Left} or the given arrow if it is {@link Either.Right}.
+     * @param kleisli left <b>C -&gt; B</b> mapping. Can't be null.
+     * @param <C> right argument type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C> Kleisli<Either<A, C>, B> fanIn(final Kleisli<? super C, B> kleisli) {
+      nonNull(kleisli);
+      return ac -> ac.either(this::run, kleisli::run);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow and the given arrow and returns two resulting values as a pair.
+     * @param kleisli second <b>A -&gt; C</b> mapping. Can't be null.
+     * @param <C> second return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C> Kleisli<A, Pair<B, C>> fanOut(final Kleisli<? super A, C> kleisli) {
+      nonNull(kleisli);
+      return a -> run(a).zip(kleisli.run(a), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow wrapping the given function.
+     * @param function <b>A -&gt; B</b> function to wrap. Can't be null.
+     * @param <A> argument type.
+     * @param <B> return type parameter.
+     * @return an arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    static @Nonnull <A, B> Kleisli<A, B> lift(final Function<? super A, ? extends B> function) {
+      nonNull(function);
+      return a -> sequence(function.$(a));
+    }
+
+    /**
+     * Returns an arrow <b>(A -&gt; B, B) -&gt; B</b> which applies its input arrow (<b>A -&gt; B</b>) to its input
+     * value (<b>A</b>) and returns the result (<b>B</b>).
+     * @param <A> argument type.
+     * @param <B> return type.
+     * @return an arrow. Can't be null.
+     */
+    static @Nonnull <A, B> Kleisli<Pair<Kleisli<A, B>, A>, B> apply() {
+      return ka -> ka.first.run(ka.second);
     }
   }
 }

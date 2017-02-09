@@ -19,6 +19,9 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
+
+import java.io.Serializable;
 
 import static io.github.kurobako.futon.BiFunction.curry;
 import static io.github.kurobako.futon.Pair.pair;
@@ -38,7 +41,10 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <L> left value type.
  * @param <R> right value type.
  */
-public abstract class Either<L, R> implements Foldable<R> {
+@Immutable
+public abstract class Either<L, R> implements Foldable<R>, Serializable {
+  private static final long serialVersionUID = 1L;
+
   Either() {}
 
   /**
@@ -205,7 +211,10 @@ public abstract class Either<L, R> implements Foldable<R> {
    * One of two possible {@link Either} cases: Left contains a value of type <b>L</b> and is inert to most transformations.
    * @param <L> left value type.
    */
+  @Immutable
   public static final class Left<L, R> extends Either<L, R> {
+    private static final long serialVersionUID = 100L;
+
     public final @Nonnull L value;
 
     private Left(final L left) {
@@ -324,7 +333,10 @@ public abstract class Either<L, R> implements Foldable<R> {
    * One of two possible {@link Either} cases: Right contains a value of type <b>R</b> and is participant in all transformations.
    * @param <R> right value type.
    */
+  @Immutable
   public static final class Right<L, R> extends Either<L, R> {
+    private static final long serialVersionUID = 100L;
+
     public final @Nonnull R value;
 
     private Right(final R right) {

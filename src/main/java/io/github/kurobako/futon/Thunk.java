@@ -19,20 +19,23 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import static io.github.kurobako.futon.Pair.pair;
+import static io.github.kurobako.futon.Trampoline.delay;
 import static io.github.kurobako.futon.Util.nonNull;
 
 /**
- * A version of {@link Value} which memoizes its result once it is retrieved using double-checked locking.
+ * <p>A {@link Value} wrapper which memoizes its result once it is retrieved using double-checked locking.</p>
+ * <p>Thunk delays the evaluation of the value until {@link #get()} would be used to force the result.</p>
  * @param <A> result type.
  */
+@Immutable
 public final class Thunk<A> implements Value<A> {
-  private volatile Value<A> computation;
+  private volatile Trampoline<A> computation;
   private A result;
 
-  private Thunk(final Value<A> computation) {
+  private Thunk(final Trampoline<A> computation) {
     this.computation = computation;
   }
 
@@ -43,12 +46,47 @@ public final class Thunk<A> implements Value<A> {
       synchronized (this) {
         done = (computation == null);
         if (!done) {
-          result = computation.get();
+          result = computation.run();
           computation = null;
         }
       }
     }
     return result;
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> map(final Function<? super A, ? extends B> function) {
+    return new Thunk<>(computation.map(nonNull(function)));
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> apply(final Value<? extends Function<? super A, ? extends B>> value) {
+    return new Thunk<>(computation.apply(delay(nonNull(value))));
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> bind(final Kleisli<? super A, B> kleisli) {
+    nonNull(kleisli);
+    return new Thunk<>(computation.bind(a -> delay(kleisli.run(a))));
+  }
+
+  @Override
+  public @Nonnull <B> Thunk<B> extend(final CoKleisli<A, ? extends B> coKleisli) {
+    nonNull(coKleisli);
+    return new Thunk<>(delay(() -> coKleisli.run(computation::run)));
+  }
+
+  @Override
+  public @Nonnull <B, C> Thunk<C> zip(final Value<B> value, final BiFunction<? super A, ? super B, ? extends C> function) {
+    nonNull(value);
+    nonNull(function);
+    return new Thunk<>(computation.zip(delay(value), function));
+  }
+
+  @Override
+  public @Nonnull <B, C> Pair<? extends Thunk<B>, ? extends Thunk<C>> unzip(final Function<? super A, Pair<B, C>> function) {
+    nonNull(function);
+    return pair(new Thunk<>(computation.map(a -> function.$(a).first)), new Thunk<>(computation.map(a -> function.$(a).second)));
   }
 
   @Override
@@ -65,7 +103,6 @@ public final class Thunk<A> implements Value<A> {
    * @throws NullPointerException if the argument was null.
    */
   public static @Nonnull <A> Thunk<A> thunk(final Value<A> computation) {
-    nonNull(computation);
-    return new Thunk<>(computation);
+    return new Thunk<>(delay(nonNull(computation)));
   }
 }

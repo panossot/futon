@@ -18,6 +18,8 @@
 
 package io.github.kurobako.futon;
 
+import io.github.kurobako.futon.annotation.Opaque;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -26,6 +28,7 @@ import javax.annotation.Nonnull;
  * @param <A> argument type.
  * @param <B> return type.
  */
+@FunctionalInterface
 public interface Effect<A, B> {
   /**
    * Perform the action.
@@ -33,5 +36,6 @@ public interface Effect<A, B> {
    * @return result value. Can't be null.
    * @throws Exception exception thrown while performing the action.
    */
+  @Opaque
   @Nonnull B perform(A arg) throws Exception;
 }

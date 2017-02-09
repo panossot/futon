@@ -34,6 +34,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <E> environment type.
  * @param <A> result type.
  */
+@FunctionalInterface
 public interface Reader<E, A> {
   /**
    * Runs the computation, reading a value of type <b>A</b> from the given environment <b>E</b>.
@@ -132,7 +133,7 @@ public interface Reader<E, A> {
    * @return new Reader. Can't be null.
    * @throws NullPointerException if the argument was null.
    */
-  static @Nonnull <E, A> Reader<E, A> unwrap(final Reader<E, ? extends Reader<E, A>> reader) {
+  static @Nonnull <E, A> Reader<E, A> dereference(final Reader<E, ? extends Reader<E, A>> reader) {
     return nonNull(reader).bind(arg -> arg);
   }
 

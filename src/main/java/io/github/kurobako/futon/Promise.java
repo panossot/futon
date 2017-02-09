@@ -18,12 +18,13 @@
 
 package io.github.kurobako.futon;
 
-import io.github.kurobako.futon.annotation.Impure;
+import io.github.kurobako.futon.annotation.Opaque;
 
 import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * <p>Promise is a readable part of a {@link Future}-Promise pair similar to those in scala standard library representing
+ * <p>Promise is a writable part of a {@link Future}-Promise pair similar to those in scala standard library representing
  * a computation which might be not completed yet and may result in a failure.</p>
  * <p>Promise might be completed with either a result value, in which case it is considered to be a success, or with a
  * {@link Throwable}, in which it is considered a failure. Subsequent attempts to complete this Promise will result
@@ -34,6 +35,7 @@ import javax.annotation.Nonnull;
  *  <p>{@link #contraMap(Function)} makes Predicate a contravariant functor.</p>
  * @param <A> result type.
  */
+@ThreadSafe
 public interface Promise<A> {
   /**
    * Returns a readable part of this future-promise pair.
@@ -56,7 +58,7 @@ public interface Promise<A> {
    * @return true if this method was the one to complete the Promise, false otherwise.
    * @throws NullPointerException if the argument was null.
    */
-  @Impure
+  @Opaque
   default boolean trySuccess(final A value) {
     try {
       success(value);
@@ -81,7 +83,7 @@ public interface Promise<A> {
    * @return true if this method was the one to complete the Promise, false otherwise.
    * @throws NullPointerException if the argument was null.
    */
-  @Impure
+  @Opaque
   default boolean tryFailure(final Throwable cause) {
     try {
       failure(cause);
@@ -106,7 +108,7 @@ public interface Promise<A> {
    * @return true if this method was the one to complete the Promise, false otherwise.
    * @throws NullPointerException if the argument was null.
    */
-  @Impure
+  @Opaque
   default boolean tryComplete(final Either<? extends Throwable, ? extends A> completion) {
     try {
       complete(completion);

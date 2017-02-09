@@ -36,6 +36,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <S> seed type.
  * @param <A> produced value type.
  */
+@FunctionalInterface
 public interface State<S, A> {
   /**
    * Runs the computation, producing new seed <b>S</b> and a value <b>A</b> based on passed <b>S</b>.

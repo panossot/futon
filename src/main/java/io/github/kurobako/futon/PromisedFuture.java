@@ -111,12 +111,12 @@ final class PromisedFuture<A> implements Promise<A>, Future<A> {
   }
 
   @Override
-  public @Nonnull <B> Future<B> bind(final Function<? super A, ? extends Future<B>> function) {
+  public @Nonnull <B> Future<B> bind(final Kleisli<? super A, B> function) {
     nonNull(function);
     final PromisedFuture<B> result = new PromisedFuture<>();
     final Runnable action = () -> state.match(incomplete -> result.future(),
                                               complete -> complete.value.either(result::failure,
-                                                                                right -> result.tryCompleteWith(function.$(right))));
+                                                                                right -> result.tryCompleteWith(function.run(right))));
     return completeWith(result, action);
   }
 

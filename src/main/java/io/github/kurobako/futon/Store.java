@@ -33,6 +33,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <I> index type.
  * @param <A> value type.
  */
+@FunctionalInterface
 public interface Store<I, A> {
   /**
    * Returns both index and a function this Store contains.

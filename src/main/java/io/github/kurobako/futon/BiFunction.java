@@ -30,6 +30,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <B> second argument type.
  * @param <C> return type.
  */
+@FunctionalInterface
 public interface BiFunction<A, B, C> extends Function<Pair<A, B>, C> {
   /**
    * Applies the function to given arguments.

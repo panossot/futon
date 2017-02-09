@@ -19,6 +19,7 @@
 package io.github.kurobako.futon;
 
 import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
 
 import static io.github.kurobako.futon.Util.nonNull;
 
@@ -29,6 +30,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <A> first value type.
  * @param <B> second value type.
  */
+@Immutable
 public class Pair<A, B> {
   /**
    * First value. Can't be null.

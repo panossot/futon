@@ -27,6 +27,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * <p>{@link #contraMap(Function)} makes Predicate a contravariant functor.</p>
  * @param <A> argument type.
  */
+@FunctionalInterface
 public interface Predicate<A> extends Function<A, Boolean> {
 
   /**

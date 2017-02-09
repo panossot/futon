@@ -16,26 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-package io.github.kurobako.futon;
+package io.github.kurobako.futon.annotation;
 
-import javax.annotation.Nonnull;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Procedure is a convenience subinterface of {@link Effect} for actions which return void.
- * @param <A> argument type.
+ * <p>The opposite of referentially transparent.</p>
+ * <p>Marks a function which <b>may</b> produce different values each time it is called. This annotation server no
+ * purpose other than documentation.</p>
  */
-@FunctionalInterface
-public interface Procedure<A> extends Effect<A, Unit> {
-  /**
-   * Run the procedure.
-   * @param arg argument. Can't be null.
-   * @throws Exception exception thrown while running the procedure.
-   */
-  void run(A arg) throws Exception;
-
-  @Override
-  default @Nonnull Unit perform(A arg) throws Exception {
-    run(arg);
-    return Unit.INSTANCE;
-  }
-}
+@Documented
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Opaque {}

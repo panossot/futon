@@ -32,6 +32,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <C> context type.
  * @param <A> value type.
  */
+@FunctionalInterface
 public interface Environment<C, A> {
   /**
    * Runs the computation, producing a value <b>A</b> together with a context <b>A</b>.

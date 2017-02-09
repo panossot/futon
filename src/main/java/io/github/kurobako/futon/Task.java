@@ -18,9 +18,10 @@
 
 package io.github.kurobako.futon;
 
-import io.github.kurobako.futon.annotation.Impure;
+import io.github.kurobako.futon.annotation.Opaque;
 
 import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.Closeable;
 import java.util.concurrent.ExecutionException;
@@ -28,21 +29,22 @@ import java.util.concurrent.ExecutionException;
 import static io.github.kurobako.futon.Util.nonNull;
 
 /**
- * <p>Task monad is a computation built out of individual impure, side-effecting actions wrapped inside monad to be executed
- * all at once later</p>
+ * <p>Task monad is a computation built out of individual impure, side-effecting actions to be executed all at once or
+ * step by step later.</p>
  * <p>Thus, task allows for some reasoning about the side-effecting code. Task may use custom finalizer code for its
  * resources and catches any checked exceptions produced by {@link Effect}
  * instances it runs. Note that {@link RuntimeException} thrown on execution will be rethrown as is unless caught with
  * {@link #caught(Function)}.</p>
  * <p>{@link #map(Function)} makes Task a functor.</p>
- * <p>{@link #bind(Function)} and {@link #task(A)} form a monad.</p>
+ * <p>{@link #bind(Kleisli)} and {@link #task(A)} form a monad.</p>
  * @see <a href="https://github.com/tel/scala-tk/">https://github.com/tel/scala-tk/</a>
  * @param <A> result type.
  */
+@ThreadSafe
 public final class Task<A> {
-  @Nonnull Object resource;
-  @Nonnull Effect<Object, ? extends A> effect;
-  @Nonnull Procedure<Object> cleanup;
+  @Nonnull final Object resource;
+  @Nonnull final Effect<Object, ? extends A> effect;
+  @Nonnull final Procedure<Object> cleanup;
 
   Task(final Object initial, final Effect<Object, A> effect, final Procedure<Object> cleanup) {
     this.resource = initial;
@@ -76,7 +78,7 @@ public final class Task<A> {
    * @return execution result. Can't be null.
    * @throws ExecutionException if checked except
    */
-  @Impure
+  @Opaque
   public @Nonnull A execute() throws ExecutionException {
     try {
       return perform(arg -> arg, rethrow());
@@ -97,7 +99,7 @@ public final class Task<A> {
    * in a task.
    * @return left failure or right result. Can't be null.
    */
-  @Impure
+  @Opaque
   public @Nonnull Either<Exception, A> executeChecked() {
     return perform(Either::right, Either::left);
   }
@@ -132,14 +134,14 @@ public final class Task<A> {
    * Wraps this Task in another layer which applies the given function to this task's result. If this task contains
    * an exception, returned task fails with the same exception. If this task is successful and the task returned
    * by the function fails, returned task fails with its exception.
-   * @param function <b>A -&gt; Task&lt;B&gt;</b> transformation. Can't be null.
+   * @param kleisli <b>A -&gt; Task&lt;B&gt;</b> transformation. Can't be null.
    * @param <B> new result type.
    * @return new layer of Task. Can't be null.
    * @throws NullPointerException if the argument was null.
    */
-  public @Nonnull <B> Task<B> bind(final Function<? super A, Task<B>> function) {
-    nonNull(function);
-    return task(this, tk -> tk.perform(function, rethrow()).perform(arg -> arg, rethrow()));
+  public @Nonnull <B> Task<B> bind(final Kleisli<? super A, B> kleisli) {
+    nonNull(kleisli);
+    return task(this, tk -> tk.perform(kleisli::run, rethrow()).perform(arg -> arg, rethrow()));
   }
 
   /**
@@ -154,6 +156,21 @@ public final class Task<A> {
   public @Nonnull <B> Task<B> then(final Task<B> task) {
     nonNull(task);
     return task(this, prev -> { prev.perform(arg -> arg, rethrow()); return task.perform(arg -> arg, rethrow()); });
+  }
+
+  /**
+   * Interleaves this Task with the given Task and combines their results using the given function.
+   * @param task a Task to zip with.
+   * @param function <b>A -&gt; B -&gt; C</b> transformation. Can't be null.
+   * @param <B> result type of the Task to zip with.
+   * @param <C> new result type.
+   * @return a Task zipped with the given Task. Can't be null.
+   * @throws NullPointerException if any argument was null.
+   */
+  public @Nonnull <B, C> Task<C> zip(final Task<B> task, final BiFunction<? super A, ? super B, ? extends C> function) {
+    nonNull(task);
+    nonNull(function);
+    return task(task, tk -> function.$(perform(arg -> arg, rethrow()), tk.perform(arg -> arg, rethrow())));
   }
 
   /**
@@ -219,5 +236,183 @@ public final class Task<A> {
 
   private interface ExceptionHandler<E extends Exception, R> {
     @Nonnull R handle(Exception exception) throws E;
+  }
+
+  /**
+   * <p>Kleisli arrow is a pure function from an argument of type <b>A</b> to <b>Task&lt;B&gt;</b>. </p>
+   * <p>It can be combined with other arrows of the same type (but parameterized differently) in ways similar to how
+   * {@link Function}s can be combined with other functions.</p>
+   * @param <A> argument type.
+   * @param <B> return type parameter.
+   */
+  @FunctionalInterface
+  interface Kleisli<A, B> {
+    /**
+     * Run the computation, producing a monad.
+     * @param arg computation argument. Can't be null.
+     * @return new monad. Can't be null.
+     */
+    @Nonnull Task<B> run(A arg);
+
+    /**
+     * Returns an arrow combining this arrow with the given arrow: <b>Z -&gt; A -&gt; B</b>.
+     * @param kleisli <b>Z -&gt; A</b> arrow. Can't be null.
+     * @param <Z> argument type for the new arrow.
+     * @return new <b>Z -&gt; A</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <Z> Kleisli<Z, B> precomposeKleisli(final Kleisli<? super Z, A> kleisli) {
+      nonNull(kleisli);
+      return z -> kleisli.run(z).bind(this);
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given pure function: <b>Z -&gt; A -&gt; B</b>.
+     * @param function <b>Z -&gt; A</b> function. Can't be null.
+     * @param <Z> argument type for the new arrow.
+     * @return new <b>Z -&gt; A</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <Z> Kleisli<Z, B> precomposeFunction(final Function<? super Z, ? extends A> function) {
+      nonNull(function);
+      return z -> run(function.$(z));
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given arrow: <b>A -&gt; B -&gt; C</b>.
+     * @param kleisli <b>B -&gt; C</b> arrow. Can't be null.
+     * @param <C> return type for the new arrow.
+     * @return new <b>A -&gt; C</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <C> Kleisli<A, C> postcomposeKleisli(final Kleisli<? super B, C> kleisli) {
+      nonNull(kleisli);
+      return a -> run(a).bind(kleisli);
+    }
+
+    /**
+     * Returns an arrow combining this arrow with the given pure function: <b>A -&gt; B -&gt; C</b>.
+     * @param function <b>B -&gt; C</b> function. Can't be null.
+     * @param <C> return type for the new arrow.
+     * @return new <b>A -&gt; C</b> arrow. Can't be null.
+     * @throws NullPointerException if the argument was null.
+     */
+    default @Nonnull <C> Kleisli<A, C> postcomposeFunction(final Function<? super B, ? extends C> function) {
+      nonNull(function);
+      return a -> run(a).map(function);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow of it is {@link Either.Left} and passes it
+     * unchanged otherwise.
+     * @param <C> right component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Either<A, C>, Either<B, C>> left() {
+      return ac -> ac.either(a -> run(a).map(Either::left), c -> task(Either.right(c)));
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow of it is {@link Either.Right} and passes it
+     * unchanged otherwise.
+     * @param <C> left component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Either<C, A>, Either<C, B>> right() {
+      return ca -> ca.either(c -> task(Either.left(c)), a -> run(a).map(Either::right));
+    }
+
+    /**
+     * Returns an arrow which maps first part of its input and passes the second part unchanged.
+     * @param <C> right component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Pair<A, C>, Pair<B, C>> first() {
+      return ac -> run(ac.first).zip(task(ac.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps second part of its input and passes the first part unchanged.
+     * @param <C> left component type.
+     * @return new arrow. Can't be null.
+     */
+    default @Nonnull <C> Kleisli<Pair<C, A>, Pair<C, B>> second() {
+      return ca -> task(ca.first).zip(run(ca.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow if it is {@link Either.Left} and using the given arrow if
+     * it is {@link Either.Right}.
+     * @param kleisli right <b>C -&gt; D</b> mapping. Can't be null.
+     * @param <C> right argument type.
+     * @param <D> right return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C, D> Kleisli<Either<A, C>, Either<B, D>> sum(final Kleisli<? super C, D> kleisli) {
+      nonNull(kleisli);
+      return ac -> ac.either(a -> run(a).map(Either::left), c -> kleisli.run(c).map(Either::right));
+    }
+
+    /**
+     * Returns an arrow which maps the first part of its input using this arrow and the second part using the given arrow.
+     * @param kleisli second <b>C -&gt; D</b> mapping. Can't be null.
+     * @param <C> second argument type.
+     * @param <D> second return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C, D> Kleisli<Pair<A, C>, Pair<B, D>> product(final Kleisli<? super C, D> kleisli) {
+      nonNull(kleisli);
+      return ac -> run(ac.first).zip(kleisli.run(ac.second), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow which maps input using this arrow if it is {@link Either.Left} or the given arrow if it is {@link Either.Right}.
+     * @param kleisli left <b>C -&gt; B</b> mapping. Can't be null.
+     * @param <C> right argument type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C> Kleisli<Either<A, C>, B> fanIn(final Kleisli<? super C, B> kleisli) {
+      nonNull(kleisli);
+      return ac -> ac.either(this::run, kleisli::run);
+    }
+
+    /**
+     * Returns an arrow which maps its input using this arrow and the given arrow and returns two resulting values as a pair.
+     * @param kleisli second <b>A -&gt; C</b> mapping. Can't be null.
+     * @param <C> second return type.
+     * @return new arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    default @Nonnull <C> Kleisli<A, Pair<B, C>> fanOut(final Kleisli<? super A, C> kleisli) {
+      nonNull(kleisli);
+      return a -> run(a).zip(kleisli.run(a), Pair::pair);
+    }
+
+    /**
+     * Returns an arrow wrapping the given function.
+     * @param function <b>A -&gt; B</b> function to wrap. Can't be null.
+     * @param <A> argument type.
+     * @param <B> return type parameter.
+     * @return an arrow. Can't be null.
+     * @throws NullPointerException if the argument is null.
+     */
+    static @Nonnull <A, B> Kleisli<A, B> lift(final Function<? super A, ? extends B> function) {
+      nonNull(function);
+      return a -> task(function.$(a));
+    }
+
+    /**
+     * Returns an arrow <b>(A -&gt; B, B) -&gt; B</b> which applies its input arrow (<b>A -&gt; B</b>) to its input
+     * value (<b>A</b>) and returns the result (<b>B</b>).
+     * @param <A> argument type.
+     * @param <B> return type.
+     * @return an arrow. Can't be null.
+     */
+    static @Nonnull <A, B> Kleisli<Pair<Kleisli<A, B>, A>, B> apply() {
+      return ka -> ka.first.run(ka.second);
+    }
   }
 }

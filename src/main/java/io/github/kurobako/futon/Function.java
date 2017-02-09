@@ -29,6 +29,7 @@ import static io.github.kurobako.futon.Util.nonNull;
  * @param <A> argument type.
  * @param <B> return type.
  */
+@FunctionalInterface
 public interface Function<A, B> {
   /**
    * Applies the function to the given argument.
@@ -42,7 +43,7 @@ public interface Function<A, B> {
    * @param function <b>Z -&gt; A</b> function. Can't be null.
    * @param <Z> argument type for the new function.
    * @return new <b>Z -&gt; A</b> function. Can't be null.
-   * @throws NullPointerException if argument was null.
+   * @throws NullPointerException if the argument was null.
    */
   default @Nonnull <Z> Function<Z, B> precompose(final Function<? super Z, ? extends A> function) {
     nonNull(function);
@@ -53,8 +54,8 @@ public interface Function<A, B> {
    * Returns a function combining this function with the given function: <b>A -&gt; B -&gt; C</b>.
    * @param function <b>B -&gt; C</b> function. Can't be null.
    * @param <C> return type for the new function.
-   * @return new function: <b>A -&gt; C</b>. Can't be null.
-   * @throws NullPointerException if argument was null.
+   * @return new <b>A -&gt; C</b> function. Can't be null.
+   * @throws NullPointerException if the argument was null.
    */
   default @Nonnull <C> Function<A, C> postcompose(final Function<? super B, ? extends C> function) {
     nonNull(function);
@@ -89,6 +90,7 @@ public interface Function<A, B> {
   default @Nonnull <C> Function<Pair<A, C>, Pair<B, C>> first() {
     return ac -> ac.biMap(this, arg -> arg);
   }
+
   /**
    * Returns a function which maps second part of its input and passes the first part unchanged.
    * @param <C> left component type.
@@ -104,7 +106,7 @@ public interface Function<A, B> {
    * @param <C> right argument type.
    * @param <D> right return type.
    * @return new Function. Can't be null.
-   * @throws NullPointerException if argument is null.
+   * @throws NullPointerException if the argument is null.
    */
   default @Nonnull <C, D> Function<Either<A, C>, Either<B, D>> sum(final Function<? super C, ? extends D> function) {
     nonNull(function);
@@ -117,7 +119,7 @@ public interface Function<A, B> {
    * @param <C> second argument type.
    * @param <D> second return type.
    * @return new Function. Can't be null.
-   * @throws NullPointerException if argument is null.
+   * @throws NullPointerException if the argument is null.
    */
   default @Nonnull <C, D> Function<Pair<A, C>, Pair<B, D>> product(final Function<? super C, ? extends D> function) {
     nonNull(function);
@@ -129,7 +131,7 @@ public interface Function<A, B> {
    * @param function left <b>C -&gt; B</b> mapping. Can't be null.
    * @param <C> right argument type.
    * @return new Function. Can't be null.
-   * @throws NullPointerException if argument is null.
+   * @throws NullPointerException if the argument is null.
    */
   default @Nonnull <C> Function<Either<A, C>, B> fanIn(final Function<? super C, ? extends B> function) {
     nonNull(function);
@@ -141,7 +143,7 @@ public interface Function<A, B> {
    * @param function second <b>A -&gt; C</b> mapping. Can't be null.
    * @param <C> second return type.
    * @return new Function. Can't be null.
-   * @throws NullPointerException if argument is null.
+   * @throws NullPointerException if the argument is null.
    */
   default @Nonnull <C> Function<A, Pair<B, C>> fanOut(final Function<? super A, ? extends C> function) {
     nonNull(function);
